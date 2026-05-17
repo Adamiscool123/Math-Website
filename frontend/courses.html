@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Courses — Matheye</title>
+  <link rel="stylesheet" href="/css/global.css"/>
+  <style>
+    .courses-header { padding: 3rem 0 2rem; }
+    .welcome-banner {
+      background: linear-gradient(135deg, rgba(124,111,234,0.15), rgba(0,212,170,0.08));
+      border: 1px solid rgba(124,111,234,0.2); border-radius: var(--radius-lg);
+      padding: 2rem 2.5rem; margin-bottom: 2.5rem;
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+    .welcome-banner .avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--teal));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .welcome-text h2 { font-size: 1.3rem; margin-bottom: 0.2rem; }
+    .welcome-text p { font-size: 0.9rem; }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 1.25rem; padding-bottom: 4rem; }
+    .course-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      transition: all 0.3s ease; cursor: pointer; text-decoration: none; color: inherit; display: block;
+    }
+    .course-card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 25px var(--glow); }
+    .course-banner-img {
+      height: 150px; display: flex; align-items: center; justify-content: center; font-size: 4rem; position: relative;
+    }
+    .course-banner-img.purple { background: linear-gradient(135deg, rgba(124,111,234,0.3), rgba(91,79,204,0.15)); }
+    .course-banner-img.locked { background: var(--surface2); opacity: 0.5; filter: grayscale(1); }
+    .course-body { padding: 1.5rem; }
+    .course-body h3 { margin-bottom: 0.3rem; }
+    .course-body .desc { font-size: 0.85rem; margin: 0.5rem 0 1rem; }
+    .course-stats { display: flex; gap: 1rem; font-size: 0.78rem; color: var(--text3); flex-wrap: wrap; }
+    .course-progress-wrap { margin-top: 1rem; }
+    .course-progress-wrap .prog-label { display:flex; justify-content:space-between; font-size:0.78rem; color:var(--text3); margin-bottom:0.3rem; }
+    .coming-overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(10,12,18,0.7); font-size: 0.85rem; font-weight: 700; color: var(--text3); letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/" class="nav-logo"><div class="logo-icon">👁</div>Matheye</a>
+  <div class="nav-links">
+    <a href="/courses" class="nav-link" style="color:var(--text)">Courses</a>
+  </div>
+  <div class="nav-actions" id="navActions"></div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="container">
+    <div class="courses-header animate-fade-up">
+      <div class="welcome-banner" id="welcomeBanner" style="display:none;">
+        <div class="avatar" id="userAvatar"></div>
+        <div class="welcome-text">
+          <h2 id="welcomeMsg">Welcome back!</h2>
+          <p>Pick up where you left off, or start a new topic.</p>
+        </div>
+      </div>
+      <h2 style="margin-bottom:0.5rem;">All Courses</h2>
+      <p>Choose a course to get started.</p>
+    </div>
+
+    <div class="course-grid animate-fade-up animate-delay-1">
+      <!-- Algebra 1 -->
+      <a href="/course?id=algebra1" class="course-card">
+        <div class="course-banner-img purple">🔢</div>
+        <div class="course-body">
+          <span class="badge badge-teal" style="margin-bottom:0.5rem;">Available</span>
+          <h3>Algebra 1</h3>
+          <p class="desc">Master the foundations of algebra — equations, functions, graphing, quadratics, and more.</p>
+          <div class="course-stats">
+            <span>📚 10 units</span>
+            <span>🎯 40+ topics</span>
+            <span>❓ 500+ questions</span>
+          </div>
+          <div class="course-progress-wrap" id="algebra1Progress" style="display:none;">
+            <div class="prog-label"><span>Progress</span><span id="algebra1Pct">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="algebra1Fill" style="width:0%"></div></div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Geometry (coming soon) -->
+      <div class="course-card" style="pointer-events:none;opacity:0.6;">
+        <div class="course-banner-img locked" style="position:relative;">📐<div class="coming-overlay">COMING SOON</div></div>
+        <div class="course-body">
+          <span class="badge badge-yellow" style="margin-bottom:0.5rem;">Coming Soon</span>
+          <h3>Geometry</h3>
+          <p class="desc">Shapes, proofs, area, volume, and trigonometry fundamentals.</p>
+          <div class="course-stats"><span>📚 8 units</span><span>🎯 35+ topics</span></div>
+        </div>
+      </div>
+
+      <!-- Algebra 2 (coming soon) -->
+      <div class="course-card" style="pointer-events:none;opacity:0.6;">
+        <div class="course-banner-img locked" style="position:relative;">📊<div class="coming-overlay">COMING SOON</div></div>
+        <div class="course-body">
+          <span class="badge badge-yellow" style="margin-bottom:0.5rem;">Coming Soon</span>
+          <h3>Algebra 2</h3>
+          <p class="desc">Advanced functions, polynomials, logarithms, and conic sections.</p>
+          <div class="course-stats"><span>📚 9 units</span><span>🎯 45+ topics</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('matheye_token');
+  const user  = JSON.parse(localStorage.getItem('matheye_user') || 'null');
+
+  if (user) {
+    document.getElementById('welcomeBanner').style.display = 'flex';
+    document.getElementById('userAvatar').textContent = user.name[0].toUpperCase();
+    document.getElementById('welcomeMsg').textContent  = `Welcome back, ${user.name.split(' ')[0]}!`;
+    document.getElementById('navActions').innerHTML = `
+      <span style="color:var(--text2);font-size:0.88rem;">${user.name}</span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Log Out</button>
+    `;
+    loadProgress();
+  } else {
+    document.getElementById('navActions').innerHTML = `
+      <a href="/auth" class="btn btn-ghost btn-sm">Log In</a>
+      <a href="/auth?mode=signup" class="btn btn-primary btn-sm">Sign Up</a>
+    `;
+  }
+
+  async function loadProgress() {
+    try {
+      const res = await fetch('/api/progress/algebra1', { headers:{ Authorization:`Bearer ${token}` }});
+      if (!res.ok) return;
+      const data = await res.json();
+      const topics = Object.values(data.progress);
+      if (!topics.length) return;
+      const completed = topics.filter(t=>t.learn_completed).length;
+      const total = 40; // approx
+      const pct = Math.round((completed/total)*100);
+      document.getElementById('algebra1Progress').style.display = 'block';
+      document.getElementById('algebra1Pct').textContent = pct + '%';
+      document.getElementById('algebra1Fill').style.width = pct + '%';
+    } catch {}
+  }
+
+  function logout() {
+    localStorage.removeItem('matheye_token');
+    localStorage.removeItem('matheye_user');
+    window.location = '/';
+  }
+</script>
+</body>
+</html>

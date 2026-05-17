@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Matheye — Sign In</title>
+  <meta name="description" content="Create your Matheye account or log in to track your math progress."/>
+  <link rel="stylesheet" href="/css/global.css"/>
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh;
+      background: radial-gradient(ellipse 70% 60% at 30% 30%, rgba(124,111,234,0.12), transparent 60%),
+                  radial-gradient(ellipse 50% 50% at 80% 80%, rgba(0,212,170,0.08), transparent 60%),
+                  var(--bg); }
+    .auth-wrapper { width:100%; max-width:440px; padding:1.5rem; }
+    .auth-logo { text-align:center; margin-bottom:2rem; }
+    .auth-logo a { display:inline-flex; align-items:center; gap:10px; font-size:1.5rem; font-weight:800; color:var(--text); }
+    .auth-logo .logo-icon { width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--teal));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem; }
+    .auth-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:2.5rem; }
+    .auth-tabs { display:flex; background:var(--surface2); border-radius:var(--radius); padding:4px; margin-bottom:2rem; }
+    .auth-tab { flex:1; padding:0.6rem; border-radius:8px; font-size:0.9rem; font-weight:600; color:var(--text2); background:transparent; transition:all var(--transition); cursor:pointer; text-align:center; border:none; }
+    .auth-tab.active { background:var(--surface); color:var(--text); box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+    .auth-form { display:flex; flex-direction:column; gap:1.25rem; }
+    .divider { display:flex; align-items:center; gap:1rem; color:var(--text3); font-size:0.8rem; }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .auth-footer { text-align:center; margin-top:1.5rem; font-size:0.85rem; color:var(--text3); }
+    .auth-footer a { color:var(--accent); font-weight:600; }
+    #authError, #authSuccess { display:none; margin-bottom:0.5rem; }
+  </style>
+</head>
+<body>
+<div class="auth-wrapper animate-fade-up">
+  <div class="auth-logo">
+    <a href="/"><div class="logo-icon">👁</div> Matheye</a>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="loginTab" onclick="switchTab('login')">Log In</button>
+      <button class="auth-tab" id="signupTab" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <div id="authError" class="alert alert-error"></div>
+    <div id="authSuccess" class="alert alert-success"></div>
+
+    <!-- LOGIN FORM -->
+    <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label" for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" class="form-input" placeholder="you@example.com" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" class="form-input" placeholder="Your password" required/>
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;">Log In</button>
+    </form>
+
+    <!-- SIGNUP FORM -->
+    <form class="auth-form" id="signupForm" style="display:none;" onsubmit="handleSignup(event)">
+      <div class="form-group">
+        <label class="form-label" for="signupName">Full Name</label>
+        <input type="text" id="signupName" class="form-input" placeholder="Your name" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" class="form-input" placeholder="you@example.com" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="signupPassword">Password</label>
+        <input type="password" id="signupPassword" class="form-input" placeholder="At least 6 characters" required/>
+      </div>
+      <button type="submit" class="btn btn-primary" id="signupBtn" style="width:100%;justify-content:center;">Create Account</button>
+    </form>
+
+    <p class="auth-footer">
+      By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+    </p>
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode') === 'signup') switchTab('signup');
+
+  // Redirect if already logged in
+  if (localStorage.getItem('matheye_token')) window.location = '/courses';
+
+  function switchTab(tab) {
+    clearMessages();
+    document.getElementById('loginForm').style.display   = tab==='login'  ? 'flex' : 'none';
+    document.getElementById('signupForm').style.display  = tab==='signup' ? 'flex' : 'none';
+    document.getElementById('loginTab').className  = 'auth-tab' + (tab==='login'  ? ' active' : '');
+    document.getElementById('signupTab').className = 'auth-tab' + (tab==='signup' ? ' active' : '');
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('authError');
+    el.textContent = msg; el.style.display = 'block';
+    document.getElementById('authSuccess').style.display = 'none';
+  }
+  function showSuccess(msg) {
+    const el = document.getElementById('authSuccess');
+    el.textContent = msg; el.style.display = 'block';
+    document.getElementById('authError').style.display = 'none';
+  }
+  function clearMessages() {
+    document.getElementById('authError').style.display = 'none';
+    document.getElementById('authSuccess').style.display = 'none';
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault(); clearMessages();
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = 'Logging in…';
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: document.getElementById('loginEmail').value, password: document.getElementById('loginPassword').value })
+      });
+      const data = await res.json();
+      if (!res.ok) { showError(data.error); btn.disabled=false; btn.textContent='Log In'; return; }
+      localStorage.setItem('matheye_token', data.token);
+      localStorage.setItem('matheye_user', JSON.stringify(data.user));
+      window.location = '/courses';
+    } catch { showError('Network error. Please try again.'); btn.disabled=false; btn.textContent='Log In'; }
+  }
+
+  async function handleSignup(e) {
+    e.preventDefault(); clearMessages();
+    const btn = document.getElementById('signupBtn');
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          name: document.getElementById('signupName').value,
+          email: document.getElementById('signupEmail').value,
+          password: document.getElementById('signupPassword').value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { showError(data.error); btn.disabled=false; btn.textContent='Create Account'; return; }
+      localStorage.setItem('matheye_token', data.token);
+      localStorage.setItem('matheye_user', JSON.stringify(data.user));
+      showSuccess('Account created! Redirecting…');
+      setTimeout(()=>window.location='/courses', 1000);
+    } catch { showError('Network error. Please try again.'); btn.disabled=false; btn.textContent='Create Account'; }
+  }
+</script>
+</body>
+</html>
