@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { defaultFont, defaultTheme, FONT_STORAGE_KEY, fontOptions, THEME_STORAGE_KEY, themeOptions } from "@/lib/theme";
 import { AppShell } from "@/components/AppShell";
 import "./globals.css";
@@ -24,11 +25,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   `;
 
   return (
-    <html data-font={defaultFont} data-theme={defaultTheme} lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+    <html data-font={defaultFont} data-scroll-behavior="smooth" data-theme={defaultTheme} lang="en" suppressHydrationWarning>
       <body>
+        <Script dangerouslySetInnerHTML={{ __html: themeScript }} id="matheye-theme-init" strategy="beforeInteractive" />
         <AppShell>{children}</AppShell>
       </body>
     </html>

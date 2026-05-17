@@ -10,6 +10,7 @@ type TopicKind =
   | "polynomial"
   | "quadratic"
   | "radical"
+  | "exponential"
   | "statistics";
 
 type TopicSpec = {
@@ -136,6 +137,19 @@ const unitSpecs: UnitSpec[] = [
     ],
   },
   {
+    id: "exponential-functions-sequences",
+    title: "Exponential Functions and Sequences",
+    description: "Model repeated multiplication, percent change, and sequence rules.",
+    topics: [
+      { title: "Exponential Growth", slug: "exponential-growth", kind: "exponential" },
+      { title: "Exponential Decay", slug: "exponential-decay", kind: "exponential" },
+      { title: "Linear vs Exponential Models", slug: "linear-vs-exponential-models", kind: "exponential" },
+      { title: "Arithmetic Sequences", slug: "arithmetic-sequences", kind: "exponential" },
+      { title: "Geometric Sequences", slug: "geometric-sequences", kind: "exponential" },
+      { title: "Recursive and Explicit Rules", slug: "recursive-explicit-rules", kind: "exponential" },
+    ],
+  },
+  {
     id: "statistics",
     title: "Statistics",
     description: "Summarize data sets and interpret displays, associations, and trend lines.",
@@ -184,6 +198,10 @@ const formulaMap: Record<TopicKind, Formula[]> = {
   radical: [
     { label: "Square root", latex: "\\sqrt{ab}=\\sqrt a\\sqrt b" },
     { label: "Distance", latex: "d=\\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}" },
+  ],
+  exponential: [
+    { label: "Exponential model", latex: "y=a\\cdot b^x" },
+    { label: "Sequence rule", latex: "a_n=a_1\\cdot r^{n-1}" },
   ],
   statistics: [
     { label: "Mean", latex: "\\bar{x}=\\frac{x_1+x_2+\\cdots+x_n}{n}" },
@@ -237,6 +255,11 @@ const mistakeMap: Record<TopicKind, string[]> = {
     "Leaving a perfect square factor inside the radical.",
     "Forgetting that distance is always nonnegative.",
   ],
+  exponential: [
+    "Adding the same amount each step when the situation is multiplying by a constant factor.",
+    "Confusing the starting value with the growth or decay factor.",
+    "Writing percent increase or decrease as the percent itself instead of 1 plus or minus the rate.",
+  ],
   statistics: [
     "Using the range when the problem asks for the mean.",
     "Forgetting to order data before finding the median or quartiles.",
@@ -280,6 +303,10 @@ const visualMap: Record<TopicKind, VisualAid> = {
   radical: {
     title: "Square factor ladder",
     body: "Break the radicand into the largest perfect-square factor times the leftover factor.",
+  },
+  exponential: {
+    title: "Multiplier model",
+    body: "Linear patterns add a constant difference; exponential patterns multiply by a constant factor each step.",
   },
   statistics: {
     title: "Data summary stack",
@@ -508,6 +535,38 @@ function buildQuestion(kind: TopicKind, title: string, templateId: string, diffi
     );
   }
 
+  if (kind === "exponential") {
+    const start = rand(2, scale);
+    const factor = difficulty === "easy" ? rand(2, 3) : rand(2, 5);
+    const step = rand(2, 5);
+    const answer = String(start * factor ** step);
+    const questionText =
+      title.includes("Arithmetic")
+        ? `An arithmetic sequence starts at ${start} and adds ${factor} each term. What is term ${step + 1}?`
+        : title.includes("Decay")
+          ? `A value starts at ${start * 100} and is multiplied by 0.${factor + 3} each step. Which kind of model is this?`
+          : `An exponential pattern starts at ${start} and is multiplied by ${factor} each step. What is the value after ${step} steps?`;
+    const answers = title.includes("Decay") ? ["exponential decay", "decay"] : [answer];
+    const solution = title.includes("Arithmetic")
+      ? [`Start with ${start}.`, `Add ${factor} for ${step} steps: ${start} + ${factor}(${step}).`, `The term is ${start + factor * step}.`]
+      : title.includes("Decay")
+        ? ["The multiplier is less than 1.", "Repeated multiplication by a factor below 1 makes the value shrink.", "This is exponential decay."]
+        : [`Use y = a * b^x.`, `y = ${start} * ${factor}^${step}.`, `The value is ${answer}.`];
+    const finalAnswers = title.includes("Arithmetic") ? [String(start + factor * step)] : answers;
+    return instance(
+      templateId,
+      difficulty,
+      skill,
+      questionText,
+      finalAnswers,
+      ["Identify the starting value.", "Decide whether the pattern adds or multiplies.", "Apply the rule for the requested step."],
+      solution,
+      variant % 2 === 0 && !title.includes("Decay")
+        ? choices(finalAnswers[0], [String(Number(finalAnswers[0]) + factor), String(Number(finalAnswers[0]) - factor), String(start + factor * step)])
+        : undefined,
+    );
+  }
+
   const values = [rand(2, scale), rand(2, scale), rand(2, scale), rand(2, scale), rand(2, scale)];
   const total = values.reduce((sum, value) => sum + value, 0);
   const answer = String(total / values.length);
@@ -552,15 +611,92 @@ function buildLesson(title: string, kind: TopicKind) {
     polynomial: `${title} builds algebraic fluency with powers and products. The reliable strategy is to track like terms and verify by reversing the operation when possible.`,
     quadratic: `${title} studies second-degree relationships. Parabolas, roots, vertex form, and factoring all describe the same curved pattern.`,
     radical: `${title} uses square roots to describe exact lengths and irrational values. Simplifying means pulling out perfect-square factors without changing the value.`,
+    exponential: `${title} focuses on patterns that multiply by a constant factor. The key question is whether the situation changes by repeated addition or repeated multiplication.`,
     statistics: `${title} turns raw data into summaries. The goal is to describe center, spread, shape, and relationships clearly.`,
+  };
+
+  const depth: Record<TopicKind, string[]> = {
+    expression: [
+      "You should be able to explain the role of each operation before simplifying, especially when parentheses, exponents, and negative values appear together.",
+      "A complete solution should show substitution, simplification, and a reasonableness check so arithmetic mistakes are easier to catch.",
+    ],
+    equation: [
+      "You should be able to choose inverse operations in the correct order and explain why each step keeps the equation balanced.",
+      "Mastery also means checking for special cases: no solution, infinitely many solutions, or a result that does not satisfy the original equation.",
+    ],
+    inequality: [
+      "You should connect the algebraic solution to a graph or interval description, including open and closed endpoints.",
+      "Mastery requires knowing when the inequality symbol reverses and how compound or absolute-value inequalities split into cases.",
+    ],
+    function: [
+      "You should move between a verbal rule, table, graph, mapping, and equation while keeping input and output roles clear.",
+      "Mastery includes identifying domain, range, rate of change, intercepts, and whether a relation is actually a function.",
+    ],
+    linear: [
+      "You should interpret slope and intercepts in context, not only calculate them from a formula.",
+      "Mastery means moving between slope-intercept, standard, point-slope, graphs, and tables without losing the same relationship.",
+    ],
+    systems: [
+      "You should know when graphing, substitution, or elimination is the most efficient method.",
+      "Mastery includes interpreting the solution as an intersection and recognizing one solution, no solution, and infinitely many solutions.",
+    ],
+    polynomial: [
+      "You should track degree, coefficients, and like terms while applying exponent rules.",
+      "Mastery includes expanding, factoring, and checking the result by reversing the operation.",
+    ],
+    quadratic: [
+      "You should connect roots, x-intercepts, vertex, axis of symmetry, and equivalent forms of the same quadratic.",
+      "Mastery includes choosing between factoring, graphing, completing the square, and the quadratic formula based on the problem.",
+    ],
+    radical: [
+      "You should simplify exact square-root expressions without turning every answer into a decimal.",
+      "Mastery includes connecting radicals to geometry through distance, right triangles, and exact lengths.",
+    ],
+    exponential: [
+      "You should identify the starting value, multiplier, growth or decay factor, and the meaning of each exponent.",
+      "Mastery includes comparing linear, arithmetic, exponential, and geometric patterns from tables, graphs, equations, and contexts.",
+    ],
+    statistics: [
+      "You should choose measures of center and spread that fit the shape of the data.",
+      "Mastery includes interpreting displays, comparing data sets, and describing association without claiming causation.",
+    ],
   };
 
   return [
     opener[kind],
     "Start by identifying what the problem is asking for, then choose the representation that makes the next step easiest. In Algebra 1, most mistakes come from moving too quickly through signs, order of operations, or notation.",
     "A strong solution has three parts: a setup that matches the problem, organized algebra or arithmetic, and a final answer checked against the original question.",
+    ...depth[kind],
   ];
 }
+
+const objectiveMap: Record<TopicKind, string[]> = {
+  expression: ["Simplify expressions accurately.", "Use properties and order of operations.", "Translate between words, symbols, and values."],
+  equation: ["Solve for an unknown value.", "Justify each inverse operation.", "Check solutions in the original equation."],
+  inequality: ["Solve and graph solution sets.", "Handle boundary points and symbols.", "Interpret answers as ranges of values."],
+  function: ["Identify inputs, outputs, domain, and range.", "Evaluate and interpret function notation.", "Compare functions across representations."],
+  linear: ["Find and interpret slope and intercepts.", "Write equations of lines.", "Graph and compare linear relationships."],
+  systems: ["Solve two relationships at once.", "Choose graphing, substitution, or elimination.", "Interpret intersections and special cases."],
+  polynomial: ["Apply exponent rules.", "Combine, multiply, and factor polynomials.", "Use structure to rewrite expressions."],
+  quadratic: ["Analyze parabolas and roots.", "Solve quadratic equations.", "Connect forms, graphs, and contexts."],
+  radical: ["Simplify radicals and exact roots.", "Use square-root relationships in geometry.", "Work with irrational values precisely."],
+  exponential: ["Recognize repeated multiplication.", "Build exponential and sequence rules.", "Compare linear and exponential models."],
+  statistics: ["Summarize data with center and spread.", "Read and compare displays.", "Interpret association and trend lines."],
+};
+
+const masteryCheckMap: Record<TopicKind, string[]> = {
+  expression: ["I can show every substitution step.", "I can explain why terms are or are not like terms.", "I can catch sign and order-of-operations errors."],
+  equation: ["I can solve without skipping inverse-operation steps.", "I can verify the solution.", "I can explain what the solution means."],
+  inequality: ["I can graph the answer correctly.", "I can reverse the symbol when needed.", "I can split compound or absolute-value cases."],
+  function: ["I can tell whether a relation is a function.", "I can evaluate f(x) correctly.", "I can read key features from a graph or table."],
+  linear: ["I can calculate slope from points.", "I can write a line equation from given information.", "I can interpret slope and intercepts in context."],
+  systems: ["I can solve by more than one method.", "I can classify the number of solutions.", "I can check the ordered pair in both equations."],
+  polynomial: ["I can apply exponent rules correctly.", "I can expand and factor accurately.", "I can check by multiplying back."],
+  quadratic: ["I can identify vertex, roots, and intercepts.", "I can solve using the appropriate method.", "I can interpret the graph in context."],
+  radical: ["I can factor out perfect squares.", "I can keep exact values when needed.", "I can use distance and Pythagorean relationships."],
+  exponential: ["I can find the initial value and multiplier.", "I can distinguish arithmetic from geometric patterns.", "I can model percent growth and decay."],
+  statistics: ["I can choose the right summary statistic.", "I can compare distributions clearly.", "I can describe correlation without overclaiming."],
+};
 
 function buildExamples(title: string, kind: TopicKind): WorkedExample[] {
   const templates = buildTemplates(kind, title, `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-example`);
@@ -583,11 +719,13 @@ function buildTopic(unitId: string, spec: TopicSpec): Topic {
     slug: spec.slug,
     title: spec.title,
     summary: `Learn, practice, and test ${spec.title.toLowerCase()} with generated Algebra 1 questions.`,
+    objectives: objectiveMap[spec.kind],
     lesson: buildLesson(spec.title, spec.kind),
     formulas: formulaMap[spec.kind],
     visual: visualMap[spec.kind],
     commonMistakes: mistakeMap[spec.kind],
     examples: buildExamples(spec.title, spec.kind),
+    masteryChecks: masteryCheckMap[spec.kind],
     questionTemplates: buildTemplates(spec.kind, spec.title, spec.slug),
   };
 }

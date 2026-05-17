@@ -1388,6 +1388,28 @@ p {
   gap: 10px;
 }
 
+.learning-list {
+  display: grid;
+  gap: 10px;
+}
+
+.learning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--surface-low);
+  color: var(--muted);
+}
+
+.learning-item svg {
+  flex: 0 0 auto;
+  color: var(--teal);
+  margin-top: 3px;
+}
+
 .formula {
   min-height: 92px;
   border: 1px solid var(--line);

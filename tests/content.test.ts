@@ -3,16 +3,18 @@ import { algebra1Course, algebra1Topics, generatePracticeSet, generateTestSet } 
 
 describe("Algebra 1 content", () => {
   it("ships all planned Algebra 1 units and topics", () => {
-    expect(algebra1Course.units).toHaveLength(10);
-    expect(algebra1Topics.length).toBeGreaterThanOrEqual(40);
+    expect(algebra1Course.units).toHaveLength(11);
+    expect(algebra1Topics).toHaveLength(54);
   });
 
-  it("gives every topic lessons, formulas, examples, mistakes, and 15 question templates", () => {
+  it("gives every topic lessons, goals, formulas, examples, mistakes, mastery checks, and 15 question templates", () => {
     for (const topic of algebra1Topics) {
-      expect(topic.lesson.length).toBeGreaterThanOrEqual(3);
+      expect(topic.objectives.length).toBeGreaterThanOrEqual(3);
+      expect(topic.lesson.length).toBeGreaterThanOrEqual(5);
       expect(topic.formulas.length).toBeGreaterThanOrEqual(2);
       expect(topic.examples.length).toBeGreaterThanOrEqual(3);
       expect(topic.commonMistakes.length).toBeGreaterThanOrEqual(3);
+      expect(topic.masteryChecks.length).toBeGreaterThanOrEqual(3);
       expect(topic.questionTemplates).toHaveLength(15);
       expect(topic.questionTemplates.filter((template) => template.difficulty === "easy")).toHaveLength(5);
       expect(topic.questionTemplates.filter((template) => template.difficulty === "medium")).toHaveLength(5);

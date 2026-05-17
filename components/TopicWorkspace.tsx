@@ -45,6 +45,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   const [practiceHints, setPracticeHints] = useState<Record<string, number>>({});
   const [practiceSolutions, setPracticeSolutions] = useState<Record<string, boolean>>({});
   const [practiceResult, setPracticeResult] = useState<ScoreResult | null>(null);
+  const [practiceQuestions, setPracticeQuestions] = useState<QuestionInstance[]>([]);
 
   const [timed, setTimed] = useState(false);
   const [seconds, setSeconds] = useState(600);
@@ -55,10 +56,16 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   const learnComplete = Boolean(progressState.learn_completed);
   const topicMastery = calculateTopicMastery(progressState);
 
-  const practiceQuestions = useMemo(
-    () => (practiceSeed < 0 || !topic ? [] : generatePracticeSet(topic, difficulty)),
-    [difficulty, practiceSeed, topic],
-  );
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setPracticeQuestions(topic ? generatePracticeSet(topic, difficulty) : []);
+    });
+    return () => {
+      active = false;
+    };
+  }, [difficulty, practiceSeed, topic]);
 
   useEffect(() => {
     if (!testStarted || !timed || testResult) return;
@@ -370,6 +377,18 @@ function LearnPanel({
   return (
     <section className="workspace-main">
       <div className="panel">
+        <h2 style={{ fontSize: "1.6rem" }}>What you will master</h2>
+        <div className="learning-list">
+          {topic.objectives.map((objective) => (
+            <div className="learning-item" key={objective}>
+              <CheckCircle2 size={16} />
+              <span>{objective}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="panel">
         <h2 style={{ fontSize: "1.6rem" }}>Concept</h2>
         {topic.lesson.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
@@ -425,6 +444,18 @@ function LearnPanel({
               </details>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <h2 style={{ fontSize: "1.4rem" }}>Ready for the test when...</h2>
+        <div className="learning-list">
+          {topic.masteryChecks.map((check) => (
+            <div className="learning-item" key={check}>
+              <CheckCircle2 size={16} />
+              <span>{check}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>

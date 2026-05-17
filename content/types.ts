@@ -44,11 +44,13 @@ export type Topic = {
   slug: string;
   title: string;
   summary: string;
+  objectives: string[];
   lesson: string[];
   formulas: Formula[];
   visual: VisualAid;
   commonMistakes: string[];
   examples: WorkedExample[];
+  masteryChecks: string[];
   questionTemplates: QuestionTemplate[];
 };
 

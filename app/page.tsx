@@ -5,6 +5,7 @@ import { algebra1Course } from "@/content/algebra1";
 
 export default function HomePage() {
   const topicCount = algebra1Course.units.reduce((count, unit) => count + unit.topics.length, 0);
+  const generatorCount = topicCount * 15;
   const featuredUnits = algebra1Course.units.slice(0, 6);
 
   return (
@@ -49,15 +50,15 @@ export default function HomePage() {
             </div>
             <div className="public-stats" aria-label="Course overview">
               <span>
-                <strong>10</strong>
+                <strong>{algebra1Course.units.length}</strong>
                 Units
               </span>
               <span>
-                <strong>48</strong>
+                <strong>{topicCount}</strong>
                 Topics
               </span>
               <span>
-                <strong>720+</strong>
+                <strong>{generatorCount}+</strong>
                 Questions
               </span>
             </div>
