@@ -1,0 +1,37 @@
+import { describe, expect, it } from "vitest";
+import type { QuestionInstance } from "@/content/types";
+import { checkAnswer, reviewRecommendations, scoreQuestions } from "@/lib/scoring";
+
+const question = (id: string, skill: string, answer: string): QuestionInstance => ({
+  id,
+  type: "free-response",
+  difficulty: "easy",
+  skill,
+  prompt: "Solve.",
+  acceptedAnswers: [answer],
+  hints: ["hint 1", "hint 2", "hint 3"],
+  solution: ["step 1"],
+});
+
+describe("scoring", () => {
+  it("normalizes simple algebra answers", () => {
+    expect(checkAnswer(question("q1", "equations", "x<3"), " x < 3 ")).toBe(true);
+    expect(checkAnswer(question("q2", "equations", "-4"), "−4")).toBe(true);
+  });
+
+  it("scores questions and builds skill breakdowns", () => {
+    const result = scoreQuestions(
+      [question("q1", "linear", "2"), question("q2", "linear", "5"), question("q3", "quadratic", "7")],
+      { q1: "2", q2: "wrong", q3: "7" },
+    );
+
+    expect(result.score).toBe(67);
+    expect(result.correct).toBe(2);
+    expect(result.skillBreakdown.linear.score).toBe(50);
+    expect(result.skillBreakdown.quadratic.score).toBe(100);
+  });
+
+  it("recommends weak skills", () => {
+    expect(reviewRecommendations({ linear: { score: 50 }, quadratic: { score: 100 } })).toEqual(["Review linear before the next test."]);
+  });
+});
