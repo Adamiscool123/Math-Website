@@ -7,6 +7,8 @@ import { createSession, setSessionCookie } from "@/lib/session";
 
 export const runtime = "nodejs";
 
+const PASSWORD_HASH_ROUNDS = 10;
+
 const signupSchema = z.object({
   name: z.string().trim().min(1).max(100),
   email: z.string().email().max(255),
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   const name = parsed.data.name.trim();
   const email = normalizeEmail(parsed.data.email);
-  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+  const passwordHash = await bcrypt.hash(parsed.data.password, PASSWORD_HASH_ROUNDS);
 
   try {
     const exists = await query("SELECT id FROM users WHERE email = $1 LIMIT 1", [email]);

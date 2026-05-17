@@ -13,26 +13,28 @@ export async function GET(_request: Request, { params }: Context) {
   if (auth.error) return auth.error;
 
   const { courseId, topicId } = await params;
-  const tests = await query(
-    `SELECT *
-     FROM test_results
-     WHERE user_id = $1
-       AND course_id = $2
-       AND topic_id = $3
-     ORDER BY created_at DESC
-     LIMIT 10`,
-    [auth.user.id, courseId, topicId],
-  );
-  const practice = await query(
-    `SELECT *
-     FROM practice_sessions
-     WHERE user_id = $1
-       AND course_id = $2
-       AND topic_id = $3
-     ORDER BY created_at DESC
-     LIMIT 10`,
-    [auth.user.id, courseId, topicId],
-  );
+  const [tests, practice] = await Promise.all([
+    query(
+      `SELECT *
+       FROM test_results
+       WHERE user_id = $1
+         AND course_id = $2
+         AND topic_id = $3
+       ORDER BY created_at DESC
+       LIMIT 10`,
+      [auth.user.id, courseId, topicId],
+    ),
+    query(
+      `SELECT *
+       FROM practice_sessions
+       WHERE user_id = $1
+         AND course_id = $2
+         AND topic_id = $3
+       ORDER BY created_at DESC
+       LIMIT 10`,
+      [auth.user.id, courseId, topicId],
+    ),
+  ]);
 
   return NextResponse.json({ tests: tests.rows, practice: practice.rows });
 }

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { generatePracticeSet, generateTestSet, getTopicBySlug } from "@/content/algebra1";
 import type { Difficulty, QuestionInstance } from "@/content/types";
 import { MathExpression } from "@/components/MathExpression";
+import { calculateTopicMastery } from "@/lib/mastery";
 import { reviewRecommendations, scoreQuestions } from "@/lib/scoring";
 
 type Mode = "learn" | "practice" | "test";
@@ -31,7 +32,13 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   const topic = getTopicBySlug(topicSlug);
   const [mode, setModeState] = useState<Mode>(initialMode);
   const [notice, setNotice] = useState("");
-  const [learnComplete, setLearnComplete] = useState(Boolean(progress?.learn_completed));
+  const [progressState, setProgressState] = useState<ProgressSummary>({
+    learn_completed: Boolean(progress?.learn_completed),
+    practice_attempts: progress?.practice_attempts ?? 0,
+    practice_best_score: progress?.practice_best_score ?? 0,
+    test_attempts: progress?.test_attempts ?? 0,
+    test_best_score: progress?.test_best_score ?? 0,
+  });
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [practiceSeed, setPracticeSeed] = useState(0);
   const [practiceAnswers, setPracticeAnswers] = useState<Record<string, string>>({});
@@ -45,6 +52,8 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   const [testAnswers, setTestAnswers] = useState<Record<string, string>>({});
   const [testStarted, setTestStarted] = useState(false);
   const [testResult, setTestResult] = useState<ScoreResult | null>(null);
+  const learnComplete = Boolean(progressState.learn_completed);
+  const topicMastery = calculateTopicMastery(progressState);
 
   const practiceQuestions = useMemo(
     () => (practiceSeed < 0 || !topic ? [] : generatePracticeSet(topic, difficulty)),
@@ -88,7 +97,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
 
     const response = await fetch(`/api/progress/${activeTopic.courseId}/${activeTopic.id}/learn`, { method: "POST" });
     if (response.ok) {
-      setLearnComplete(true);
+      setProgressState((current) => ({ ...current, learn_completed: true }));
       setNotice("Lesson saved.");
     } else {
       setNotice("Could not save progress.");
@@ -123,7 +132,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
       return;
     }
 
-    await fetch(`/api/progress/${activeTopic.courseId}/${activeTopic.id}/practice`, {
+    const response = await fetch(`/api/progress/${activeTopic.courseId}/${activeTopic.id}/practice`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -133,7 +142,16 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
         questionsCorrect: result.correct,
       }),
     });
-    setNotice("Practice score saved.");
+    if (response.ok) {
+      setProgressState((current) => ({
+        ...current,
+        practice_attempts: (current.practice_attempts ?? 0) + 1,
+        practice_best_score: Math.max(current.practice_best_score ?? 0, result.score),
+      }));
+      setNotice("Practice score saved.");
+    } else {
+      setNotice("Could not save practice score.");
+    }
   }
 
   function startTest() {
@@ -165,7 +183,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
       return;
     }
 
-    await fetch(`/api/progress/${activeTopic.courseId}/${activeTopic.id}/test`, {
+    const response = await fetch(`/api/progress/${activeTopic.courseId}/${activeTopic.id}/test`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -176,7 +194,16 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
         skillBreakdown: result.skillBreakdown,
       }),
     });
-    setNotice("Test result saved.");
+    if (response.ok) {
+      setProgressState((current) => ({
+        ...current,
+        test_attempts: (current.test_attempts ?? 0) + 1,
+        test_best_score: Math.max(current.test_best_score ?? 0, result.score),
+      }));
+      setNotice("Test result saved.");
+    } else {
+      setNotice("Could not save test result.");
+    }
   }
 
   return (
@@ -216,6 +243,8 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
               </div>
             </div>
 
+            {practiceResult ? <AttemptSummary label="Practice score" result={practiceResult} /> : null}
+
             <QuestionList
               allowHints
               answers={practiceAnswers}
@@ -238,8 +267,6 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
                 New set
               </button>
             </div>
-
-            {practiceResult ? <ScorePanel result={practiceResult} /> : null}
           </section>
         ) : null}
 
@@ -269,6 +296,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
                   {timed ? <span className="badge">Time: {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</span> : null}
                 </div>
                 {timed && seconds <= 0 && !testResult ? <div className="alert alert-error">Time is up. Submit to score this attempt.</div> : null}
+                {testResult ? <ScorePanel result={testResult} showReview /> : null}
                 <QuestionList
                   answers={testAnswers}
                   correctByQuestion={testResult?.correctByQuestion}
@@ -292,8 +320,6 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
                 </div>
               </>
             ) : null}
-
-            {testResult ? <ScorePanel result={testResult} showReview /> : null}
           </section>
         ) : null}
       </main>
@@ -302,9 +328,20 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
         <div className="panel">
           <h3>Progress</h3>
           <div className="grid">
+            <div>
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <span className="muted">Topic mastery</span>
+                <strong>{topicMastery}%</strong>
+              </div>
+              <div className="progress">
+                <span style={{ width: `${topicMastery}%` }} />
+              </div>
+            </div>
             <ProgressLine label="Lesson" value={learnComplete ? "Complete" : "Not complete"} />
-            <ProgressLine label="Practice best" value={progress?.practice_best_score != null ? `${Math.round(progress.practice_best_score)}%` : "No score"} />
-            <ProgressLine label="Test best" value={progress?.test_best_score != null ? `${Math.round(progress.test_best_score)}%` : "No score"} />
+            <ProgressLine label="Practice best" value={(progressState.practice_attempts ?? 0) > 0 ? `${Math.round(progressState.practice_best_score ?? 0)}%` : "No score"} />
+            <ProgressLine label="Test best" value={(progressState.test_attempts ?? 0) > 0 ? `${Math.round(progressState.test_best_score ?? 0)}%` : "No score"} />
+            <ProgressLine label="Practice tries" value={String(progressState.practice_attempts ?? 0)} />
+            <ProgressLine label="Test tries" value={String(progressState.test_attempts ?? 0)} />
           </div>
         </div>
         <div className="panel">
@@ -430,8 +467,8 @@ function QuestionList({
 
             {question.choices ? (
               <div className="choice-list">
-                {question.choices.map((choice) => (
-                  <button className={`choice ${answers[question.id] === choice ? "active" : ""}`} key={choice} onClick={() => onAnswer(question.id, choice)} type="button">
+                {question.choices.map((choice, choiceIndex) => (
+                  <button className={`choice ${answers[question.id] === choice ? "active" : ""}`} key={`${question.id}-${choice}-${choiceIndex}`} onClick={() => onAnswer(question.id, choice)} type="button">
                     {choice}
                   </button>
                 ))}
@@ -517,6 +554,23 @@ function ScorePanel({ result, showReview = false }: { result: ScoreResult; showR
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function AttemptSummary({ label, result }: { label: string; result: ScoreResult }) {
+  return (
+    <div className="attempt-summary">
+      <div>
+        <span className="eyebrow">{label}</span>
+        <h3>{result.score}%</h3>
+        <p>
+          {result.correct} of {result.total} correct
+        </p>
+      </div>
+      <div className="attempt-meter" style={{ "--score": result.score } as CSSProperties}>
+        <span>{result.score}%</span>
+      </div>
     </div>
   );
 }

@@ -330,7 +330,26 @@ function instance(
 }
 
 function choices(answer: string, wrong: string[]) {
-  return [answer, ...wrong].sort(() => Math.random() - 0.5);
+  const uniqueChoices: string[] = [];
+  const seen = new Set<string>();
+  const addChoice = (value: string) => {
+    if (seen.has(value)) return;
+    seen.add(value);
+    uniqueChoices.push(value);
+  };
+
+  addChoice(answer);
+  wrong.forEach(addChoice);
+
+  const numericAnswer = Number(answer);
+  if (Number.isFinite(numericAnswer)) {
+    for (const offset of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5]) {
+      if (uniqueChoices.length >= 4) break;
+      addChoice(String(numericAnswer + offset));
+    }
+  }
+
+  return uniqueChoices.slice(0, 4).sort(() => Math.random() - 0.5);
 }
 
 function buildQuestion(kind: TopicKind, title: string, templateId: string, difficulty: Difficulty, variant: number) {

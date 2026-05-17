@@ -1,6 +1,7 @@
 import { BookOpen, Lock, Sigma } from "lucide-react";
 import Link from "next/link";
 import { algebra1Course } from "@/content/algebra1";
+import { calculateCourseMastery, countMasteredTopics } from "@/lib/mastery";
 import { getCurrentUser } from "@/lib/session";
 import { getCourseProgress } from "@/lib/progress";
 
@@ -8,8 +9,8 @@ export default async function CoursesPage() {
   const user = await getCurrentUser();
   const progress = user ? await getCourseProgress(user.id, algebra1Course.id) : {};
   const topicCount = algebra1Course.units.reduce((count, unit) => count + unit.topics.length, 0);
-  const completed = Object.values(progress).filter((row) => row.learn_completed).length;
-  const percentage = topicCount ? Math.round((completed / topicCount) * 100) : 0;
+  const mastered = countMasteredTopics(algebra1Course, progress);
+  const percentage = calculateCourseMastery(algebra1Course, progress);
 
   return (
     <main className="container section">
@@ -33,12 +34,15 @@ export default async function CoursesPage() {
           </div>
           <div style={{ marginTop: 16 }}>
             <div className="row" style={{ justifyContent: "space-between" }}>
-              <span className="muted">Progress</span>
+              <span className="muted">Algebra 1 mastery</span>
               <strong>{percentage}%</strong>
             </div>
             <div className="progress">
               <span style={{ width: `${percentage}%` }} />
             </div>
+            <p style={{ margin: "10px 0 0" }}>
+              {mastered} of {topicCount} topics mastered
+            </p>
           </div>
         </Link>
 

@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle, Sigma } from "lucide-react";
 import Link from "next/link";
 import { algebra1Course } from "@/content/algebra1";
+import { calculateCourseMastery, calculateTopicMastery, countMasteredTopics } from "@/lib/mastery";
 import { getCourseProgress } from "@/lib/progress";
 import { getCurrentUser } from "@/lib/session";
 
@@ -8,8 +9,8 @@ export default async function AlgebraOnePage() {
   const user = await getCurrentUser();
   const progress = user ? await getCourseProgress(user.id, algebra1Course.id) : {};
   const topicCount = algebra1Course.units.reduce((count, unit) => count + unit.topics.length, 0);
-  const completed = Object.values(progress).filter((row) => row.learn_completed).length;
-  const percentage = topicCount ? Math.round((completed / topicCount) * 100) : 0;
+  const mastered = countMasteredTopics(algebra1Course, progress);
+  const percentage = calculateCourseMastery(algebra1Course, progress);
 
   return (
     <main className="container">
@@ -21,14 +22,14 @@ export default async function AlgebraOnePage() {
         </div>
         <div className="panel" style={{ minWidth: 260 }}>
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <span className="muted">Lesson completion</span>
+            <span className="muted">Algebra 1 mastery</span>
             <strong>{percentage}%</strong>
           </div>
           <div className="progress">
             <span style={{ width: `${percentage}%` }} />
           </div>
           <p style={{ margin: "12px 0 0" }}>
-            {completed} of {topicCount} topics complete
+            {mastered} of {topicCount} topics mastered
           </p>
         </div>
       </section>
@@ -47,16 +48,19 @@ export default async function AlgebraOnePage() {
             <div className="topic-list">
               {unit.topics.map((topic) => {
                 const row = progress[topic.id];
+                const mastery = calculateTopicMastery(row);
                 return (
                   <Link className="topic-row" href={`/courses/algebra-1/${topic.slug}?mode=learn`} key={topic.id}>
                     <span>
                       <strong>{topic.title}</strong>
                       <br />
-                      <span className="muted">{topic.summary}</span>
+                      <span className="muted">
+                        {topic.summary} Practice {Math.round(row?.practice_best_score ?? 0)}% / Test {Math.round(row?.test_best_score ?? 0)}%
+                      </span>
                     </span>
-                    <span className={row?.learn_completed ? "badge badge-teal" : "badge"}>
-                      {row?.learn_completed ? <CheckCircle2 size={15} /> : <Circle size={15} />}
-                      {row?.learn_completed ? "Done" : "Start"}
+                    <span className={mastery >= 100 ? "badge badge-teal" : "badge"}>
+                      {mastery >= 100 ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                      {mastery}%
                     </span>
                   </Link>
                 );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Nav } from "@/components/Nav";
+import { defaultFont, defaultTheme, FONT_STORAGE_KEY, fontOptions, THEME_STORAGE_KEY, themeOptions } from "@/lib/theme";
+import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,11 +9,27 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const themeScript = `
+    try {
+      var theme = localStorage.getItem("${THEME_STORAGE_KEY}") || "${defaultTheme}";
+      var font = localStorage.getItem("${FONT_STORAGE_KEY}") || "${defaultFont}";
+      if (!${JSON.stringify(themeOptions.map((theme) => theme.id))}.includes(theme)) theme = "${defaultTheme}";
+      if (!${JSON.stringify(fontOptions.map((font) => font.id))}.includes(font)) font = "${defaultFont}";
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.dataset.font = font;
+    } catch (_) {
+      document.documentElement.dataset.theme = "${defaultTheme}";
+      document.documentElement.dataset.font = "${defaultFont}";
+    }
+  `;
+
   return (
-    <html lang="en">
+    <html data-font={defaultFont} data-theme={defaultTheme} lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
-        <Nav />
-        <div className="page-shell">{children}</div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

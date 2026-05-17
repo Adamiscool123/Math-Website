@@ -35,4 +35,18 @@ describe("Algebra 1 content", () => {
       expect(question.skill).toContain(topic.title);
     }
   });
+
+  it("does not generate duplicate multiple-choice options", () => {
+    for (const topic of algebra1Topics) {
+      for (const template of topic.questionTemplates) {
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          const question = template.generate();
+          if (!question.choices) continue;
+
+          expect(new Set(question.choices).size).toBe(question.choices.length);
+          expect(question.choices).toContain(question.acceptedAnswers[0]);
+        }
+      }
+    }
+  });
 });

@@ -9,8 +9,7 @@ type Mode = "login" | "signup";
 export function AuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const mode: Mode = searchParams.get("mode") === "signup" ? "signup" : "login";
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
@@ -19,6 +18,12 @@ export function AuthForm() {
     if (pending) return mode === "signup" ? "Creating account..." : "Logging in...";
     return mode === "signup" ? "Create account" : "Log in";
   }, [mode, pending]);
+
+  function chooseMode(nextMode: Mode) {
+    setError("");
+    setSuccess("");
+    router.replace(nextMode === "signup" ? "/auth?mode=signup" : "/auth", { scroll: false });
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,8 +58,9 @@ export function AuthForm() {
       }
 
       setSuccess(mode === "signup" ? "Account created." : "Logged in.");
-      router.refresh();
+      window.dispatchEvent(new CustomEvent("matheye:user-updated", { detail: { user: data.user } }));
       router.push("/courses");
+      router.refresh();
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -65,10 +71,10 @@ export function AuthForm() {
   return (
     <div className="form-card panel">
       <div className="tabs" style={{ marginBottom: 18 }}>
-        <button className={`tab ${mode === "login" ? "active" : ""}`} onClick={() => setMode("login")} type="button">
+        <button className={`tab ${mode === "login" ? "active" : ""}`} onClick={() => chooseMode("login")} type="button">
           Log in
         </button>
-        <button className={`tab ${mode === "signup" ? "active" : ""}`} onClick={() => setMode("signup")} type="button">
+        <button className={`tab ${mode === "signup" ? "active" : ""}`} onClick={() => chooseMode("signup")} type="button">
           Sign up
         </button>
       </div>
