@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { algebra1Course, algebra1Topics, generatePracticeSet, generateTestSet } from "@/content/algebra1";
+import {
+  ALGEBRA_1_FINAL_TEST_QUESTION_COUNT,
+  PRACTICE_QUESTION_COUNT,
+  REGULAR_TEST_QUESTION_COUNT,
+  TOPIC_TEST_QUESTION_COUNT,
+  generateAlgebra1FinalTestSet,
+  generateTopicTestSet,
+} from "@/content/assessmentSets";
 
 describe("Algebra 1 content", () => {
   it("ships all planned Algebra 1 units and topics", () => {
@@ -22,19 +30,33 @@ describe("Algebra 1 content", () => {
     }
   });
 
-  it("generates complete practice and test questions", () => {
+  it("generates complete practice and regular test questions", () => {
     const topic = algebra1Topics[0];
     const practice = generatePracticeSet(topic, "easy");
     const test = generateTestSet(topic);
 
-    expect(practice).toHaveLength(5);
-    expect(test).toHaveLength(10);
+    expect(practice).toHaveLength(PRACTICE_QUESTION_COUNT);
+    expect(test).toHaveLength(REGULAR_TEST_QUESTION_COUNT);
     for (const question of [...practice, ...test]) {
       expect(question.prompt).toBeTruthy();
       expect(question.acceptedAnswers.length).toBeGreaterThan(0);
       expect(question.hints).toHaveLength(3);
       expect(question.solution.length).toBeGreaterThanOrEqual(3);
       expect(question.skill).toContain(topic.title);
+    }
+  });
+
+  it("generates 15 question topic tests and a 30 question Algebra 1 final test", () => {
+    const topic = algebra1Topics[0];
+    const topicTest = generateTopicTestSet(topic);
+    const finalTest = generateAlgebra1FinalTestSet();
+
+    expect(topicTest).toHaveLength(TOPIC_TEST_QUESTION_COUNT);
+    expect(finalTest).toHaveLength(ALGEBRA_1_FINAL_TEST_QUESTION_COUNT);
+    for (const question of [...topicTest, ...finalTest]) {
+      expect(question.prompt).toBeTruthy();
+      expect(question.acceptedAnswers.length).toBeGreaterThan(0);
+      expect(question.solution.length).toBeGreaterThanOrEqual(3);
     }
   });
 
