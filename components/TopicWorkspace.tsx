@@ -4,7 +4,7 @@ import { CheckCircle2, Clock, Lightbulb, RotateCcw, Save, XCircle } from "lucide
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { generatePracticeSet, generateTestSet, getTopicBySlug } from "@/content/algebra1";
-import { getEnhancedTopic, isDeepenedTopic } from "@/content/deepAlgebra1";
+import { getEnhancedTopic, isDeepenedTopic } from "@/content/enhancedAlgebra1";
 import type { Difficulty, QuestionInstance, Topic } from "@/content/types";
 import { MathExpression } from "@/components/MathExpression";
 import { calculateTopicMastery } from "@/lib/mastery";
