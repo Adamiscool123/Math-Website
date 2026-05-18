@@ -9,10 +9,11 @@ import {
   generateAlgebra1FinalTestSet,
   generateUnitTestSet,
 } from "@/content/assessmentSets";
-import { getEnhancedTopic, isDeepenedTopic } from "@/content/deepAlgebra1";
+import { getEnhancedTopic, isDeepenedTopic } from "@/content/enhancedAlgebra1";
 
 const foundationSlugs = ["order-of-operations", "properties-of-real-numbers", "evaluating-expressions", "writing-expressions"];
 const linearEquationSlugs = ["one-step-equations", "two-step-equations", "multi-step-equations", "variables-on-both-sides", "literal-equations"];
+const inequalitySlugs = ["one-step-inequalities", "multi-step-inequalities", "compound-inequalities", "absolute-value-equations-inequalities"];
 
 describe("Algebra 1 content", () => {
   it("ships all planned Algebra 1 units and topics", () => {
@@ -35,8 +36,8 @@ describe("Algebra 1 content", () => {
     }
   });
 
-  it("deepens Foundations and Linear Equations with richer lessons and specific question types", () => {
-    for (const slug of [...foundationSlugs, ...linearEquationSlugs]) {
+  it("deepens Units 1-3 with richer lessons and specific question types", () => {
+    for (const slug of [...foundationSlugs, ...linearEquationSlugs, ...inequalitySlugs]) {
       const topic = getTopicBySlug(slug);
       expect(topic).toBeTruthy();
       const enhanced = getEnhancedTopic(topic!);
@@ -48,7 +49,7 @@ describe("Algebra 1 content", () => {
       expect(enhanced.objectives.length).toBeGreaterThanOrEqual(4);
       expect(enhanced.questionTemplates).toHaveLength(15);
       expect(new Set(sampleQuestions.map((question) => question.skill)).size).toBeGreaterThanOrEqual(3);
-      expect(sampleQuestions.some((question) => question.type === "multiple-choice" || question.type === "expression-input" || question.type === "equation-input" || question.type === "numeric-input")).toBe(true);
+      expect(sampleQuestions.some((question) => question.type === "multiple-choice" || question.type === "expression-input" || question.type === "equation-input" || question.type === "numeric-input" || question.type === "free-response")).toBe(true);
     }
   });
 
@@ -69,7 +70,7 @@ describe("Algebra 1 content", () => {
   });
 
   it("generates 30 question unit tests and a 50 question Algebra 1 final mastery test", () => {
-    const unitTest = generateUnitTestSet(algebra1Course.units[1]);
+    const unitTest = generateUnitTestSet(algebra1Course.units[2]);
     const finalTest = generateAlgebra1FinalTestSet();
 
     expect(unitTest).toHaveLength(UNIT_TEST_QUESTION_COUNT);
@@ -84,7 +85,7 @@ describe("Algebra 1 content", () => {
   });
 
   it("builds per-topic assessment results for mastery downgrades", () => {
-    const unitTest = generateUnitTestSet(algebra1Course.units[1]);
+    const unitTest = generateUnitTestSet(algebra1Course.units[2]);
     const correctByQuestion = Object.fromEntries(unitTest.map((question, index) => [question.id, index % 2 === 0]));
     const results = buildTopicResults(unitTest, correctByQuestion);
 
