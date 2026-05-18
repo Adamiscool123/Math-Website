@@ -1,5 +1,5 @@
 import { algebra1Course, algebra1Topics } from "@/content/algebra1";
-import { getEnhancedTopic } from "@/content/deepAlgebra1";
+import { getEnhancedTopic } from "@/content/enhancedAlgebra1";
 import type { Difficulty, QuestionInstance, QuestionTemplate, Topic, Unit } from "@/content/types";
 
 export const PRACTICE_QUESTION_COUNT = 5;
