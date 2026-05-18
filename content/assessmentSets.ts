@@ -1,10 +1,11 @@
 import { algebra1Course, algebra1Topics } from "@/content/algebra1";
-import type { Difficulty, QuestionInstance, QuestionTemplate, Topic } from "@/content/types";
+import type { Difficulty, QuestionInstance, QuestionTemplate, Topic, Unit } from "@/content/types";
 
 export const PRACTICE_QUESTION_COUNT = 5;
 export const REGULAR_TEST_QUESTION_COUNT = 10;
-export const TOPIC_TEST_QUESTION_COUNT = 15;
-export const ALGEBRA_1_FINAL_TEST_QUESTION_COUNT = 30;
+export const UNIT_TEST_QUESTION_COUNT = 30;
+export const ALGEBRA_1_FINAL_TEST_QUESTION_COUNT = 50;
+export const MASTERY_TEST_THRESHOLD = 90;
 
 function difficultyOrder(difficulty: Difficulty) {
   if (difficulty === "easy") return 0;
@@ -16,45 +17,62 @@ function shuffled<T>(items: T[]) {
   return [...items].sort(() => Math.random() - 0.5);
 }
 
-function generateFromTemplates(templates: QuestionTemplate[], count: number) {
-  return templates.slice(0, count).map((template) => template.generate());
+function withTopicMeta(question: QuestionInstance, topic: Topic): QuestionInstance {
+  return {
+    ...question,
+    topicId: topic.id,
+    unitId: topic.unitId,
+    courseId: topic.courseId,
+    topicTitle: topic.title,
+  };
 }
 
-export function generateTopicTestSet(topic: Topic, count = TOPIC_TEST_QUESTION_COUNT): QuestionInstance[] {
-  const easy = topic.questionTemplates.filter((template) => template.difficulty === "easy");
-  const medium = topic.questionTemplates.filter((template) => template.difficulty === "medium");
-  const hard = topic.questionTemplates.filter((template) => template.difficulty === "hard");
+function chooseTemplate(topic: Topic, index: number) {
+  const sortedTemplates = [...topic.questionTemplates].sort((a, b) => difficultyOrder(a.difficulty) - difficultyOrder(b.difficulty));
+  return sortedTemplates[index % sortedTemplates.length];
+}
 
-  const balancedPool = [
-    ...easy.slice(0, 5),
-    ...medium.slice(0, 5),
-    ...hard.slice(0, 5),
-  ];
+function generateBalancedAssessment(topics: Topic[], count: number): QuestionInstance[] {
+  if (!topics.length) return [];
 
-  return generateFromTemplates(balancedPool, count);
+  const shuffledTopics = shuffled(topics);
+  const questions: QuestionInstance[] = [];
+  let round = 0;
+
+  while (questions.length < count) {
+    for (const topic of shuffledTopics) {
+      if (questions.length >= count) break;
+      const template = chooseTemplate(topic, round);
+      questions.push(withTopicMeta(template.generate(), topic));
+    }
+    round += 1;
+  }
+
+  return questions;
+}
+
+export function generateUnitTestSet(unit: Unit, count = UNIT_TEST_QUESTION_COUNT): QuestionInstance[] {
+  return generateBalancedAssessment(unit.topics, count);
 }
 
 export function generateAlgebra1FinalTestSet(count = ALGEBRA_1_FINAL_TEST_QUESTION_COUNT): QuestionInstance[] {
-  const topicTemplates = algebra1Course.units.flatMap((unit) =>
-    unit.topics.map((topic) => {
-      const sortedTemplates = [...topic.questionTemplates].sort((a, b) => difficultyOrder(a.difficulty) - difficultyOrder(b.difficulty));
-      return {
-        topicId: topic.id,
-        templates: sortedTemplates,
-      };
-    }),
-  );
+  return generateBalancedAssessment(algebra1Topics, count);
+}
 
-  const firstPass = shuffled(topicTemplates)
-    .slice(0, count)
-    .map(({ templates }) => templates[Math.min(1, templates.length - 1)]);
+export function buildTopicResults(questions: QuestionInstance[], correctByQuestion: Record<string, boolean>) {
+  const grouped: Record<string, { topicId: string; correctAnswers: number; totalQuestions: number }> = {};
 
-  if (firstPass.length >= count) {
-    return firstPass.map((template) => template.generate());
+  for (const question of questions) {
+    if (!question.topicId) continue;
+    grouped[question.topicId] ??= { topicId: question.topicId, correctAnswers: 0, totalQuestions: 0 };
+    grouped[question.topicId].totalQuestions += 1;
+    if (correctByQuestion[question.id]) {
+      grouped[question.topicId].correctAnswers += 1;
+    }
   }
 
-  const fallback = algebra1Topics.flatMap((topic) => topic.questionTemplates);
-  const remaining = shuffled(fallback).slice(0, count - firstPass.length);
-
-  return [...firstPass, ...remaining].slice(0, count).map((template) => template.generate());
+  return Object.values(grouped).map((row) => ({
+    ...row,
+    score: row.totalQuestions ? Math.round((row.correctAnswers / row.totalQuestions) * 100) : 0,
+  }));
 }
