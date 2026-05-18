@@ -4,9 +4,10 @@ import {
   ALGEBRA_1_FINAL_TEST_QUESTION_COUNT,
   PRACTICE_QUESTION_COUNT,
   REGULAR_TEST_QUESTION_COUNT,
-  TOPIC_TEST_QUESTION_COUNT,
+  UNIT_TEST_QUESTION_COUNT,
+  buildTopicResults,
   generateAlgebra1FinalTestSet,
-  generateTopicTestSet,
+  generateUnitTestSet,
 } from "@/content/assessmentSets";
 
 describe("Algebra 1 content", () => {
@@ -30,7 +31,7 @@ describe("Algebra 1 content", () => {
     }
   });
 
-  it("generates complete practice and regular test questions", () => {
+  it("generates complete practice and regular topic test questions", () => {
     const topic = algebra1Topics[0];
     const practice = generatePracticeSet(topic, "easy");
     const test = generateTestSet(topic);
@@ -46,17 +47,32 @@ describe("Algebra 1 content", () => {
     }
   });
 
-  it("generates 15 question topic tests and a 30 question Algebra 1 final test", () => {
-    const topic = algebra1Topics[0];
-    const topicTest = generateTopicTestSet(topic);
+  it("generates 30 question unit tests and a 50 question Algebra 1 final mastery test", () => {
+    const unitTest = generateUnitTestSet(algebra1Course.units[0]);
     const finalTest = generateAlgebra1FinalTestSet();
 
-    expect(topicTest).toHaveLength(TOPIC_TEST_QUESTION_COUNT);
+    expect(unitTest).toHaveLength(UNIT_TEST_QUESTION_COUNT);
     expect(finalTest).toHaveLength(ALGEBRA_1_FINAL_TEST_QUESTION_COUNT);
-    for (const question of [...topicTest, ...finalTest]) {
+    for (const question of [...unitTest, ...finalTest]) {
       expect(question.prompt).toBeTruthy();
+      expect(question.topicId).toBeTruthy();
+      expect(question.topicTitle).toBeTruthy();
       expect(question.acceptedAnswers.length).toBeGreaterThan(0);
       expect(question.solution.length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("builds per-topic assessment results for mastery downgrades", () => {
+    const unitTest = generateUnitTestSet(algebra1Course.units[0]);
+    const correctByQuestion = Object.fromEntries(unitTest.map((question, index) => [question.id, index % 2 === 0]));
+    const results = buildTopicResults(unitTest, correctByQuestion);
+
+    expect(results.length).toBeGreaterThan(0);
+    for (const result of results) {
+      expect(result.topicId).toBeTruthy();
+      expect(result.totalQuestions).toBeGreaterThan(0);
+      expect(result.score).toBeGreaterThanOrEqual(0);
+      expect(result.score).toBeLessThanOrEqual(100);
     }
   });
 
