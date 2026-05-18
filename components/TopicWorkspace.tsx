@@ -4,6 +4,7 @@ import { CheckCircle2, Clock, Lightbulb, RotateCcw, Save, XCircle } from "lucide
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { generatePracticeSet, generateTestSet, getTopicBySlug } from "@/content/algebra1";
+import { getEnhancedTopic, isDeepenedTopic } from "@/content/deepAlgebra1";
 import type { Difficulty, QuestionInstance } from "@/content/types";
 import { MathExpression } from "@/components/MathExpression";
 import { calculateTopicMastery } from "@/lib/mastery";
@@ -29,7 +30,8 @@ type Props = {
 };
 
 export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: Props) {
-  const topic = getTopicBySlug(topicSlug);
+  const baseTopic = getTopicBySlug(topicSlug);
+  const topic = baseTopic ? getEnhancedTopic(baseTopic) : null;
   const [mode, setModeState] = useState<Mode>(initialMode);
   const [notice, setNotice] = useState("");
   const [progressState, setProgressState] = useState<ProgressSummary>({
@@ -57,15 +59,8 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   const topicMastery = calculateTopicMastery(progressState);
 
   useEffect(() => {
-    let active = true;
-    queueMicrotask(() => {
-      if (!active) return;
-      setPracticeQuestions(topic ? generatePracticeSet(topic, difficulty) : []);
-    });
-    return () => {
-      active = false;
-    };
-  }, [difficulty, practiceSeed, topic]);
+    setPracticeQuestions(topic ? generatePracticeSet(topic, difficulty) : []);
+  }, [difficulty, practiceSeed, topicSlug]);
 
   useEffect(() => {
     if (!testStarted || !timed || testResult) return;
@@ -86,7 +81,6 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   if (!topic) {
     return <div className="panel">Topic not found.</div>;
   }
-  const activeTopic = topic;
 
   function setMode(nextMode: Mode) {
     setNotice("");
@@ -102,7 +96,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
       return;
     }
 
-    const response = await fetch(`/api/progress/${activeTopic.courseId}/${activeTopic.id}/learn`, { method: "POST" });
+    const response = await fetch(`/api/progress/${topic.courseId}/${topic.id}/learn`, { method: "POST" });
     if (response.ok) {
       setProgressState((current) => ({ ...current, learn_completed: true }));
       setNotice("Lesson saved.");
@@ -139,7 +133,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
       return;
     }
 
-    const response = await fetch(`/api/progress/${activeTopic.courseId}/${activeTopic.id}/practice`, {
+    const response = await fetch(`/api/progress/${topic.courseId}/${topic.id}/practice`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -162,7 +156,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   }
 
   function startTest() {
-    setTestQuestions(generateTestSet(activeTopic));
+    setTestQuestions(generateTestSet(topic));
     setTestAnswers({});
     setTestStarted(true);
     setTestResult(null);
@@ -190,7 +184,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
       return;
     }
 
-    const response = await fetch(`/api/progress/${activeTopic.courseId}/${activeTopic.id}/test`, {
+    const response = await fetch(`/api/progress/${topic.courseId}/${topic.id}/test`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -218,8 +212,9 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
       <main className="workspace-main">
         <div className="panel">
           <span className="eyebrow">Algebra 1</span>
-          <h1 style={{ fontSize: "clamp(2.2rem, 6vw, 4rem)", marginBottom: 10 }}>{activeTopic.title}</h1>
-          <p>{activeTopic.summary}</p>
+          <h1 style={{ fontSize: "clamp(2.2rem, 6vw, 4rem)", marginBottom: 10 }}>{topic.title}</h1>
+          <p>{topic.summary}</p>
+          {isDeepenedTopic(topic.slug) ? <div className="badge badge-teal" style={{ marginTop: 12 }}>Deep lesson upgraded</div> : null}
           <div className="tabs" aria-label="Topic mode">
             {modeTabs.map((tab) => (
               <button key={tab.value} className={`tab ${mode === tab.value ? "active" : ""}`} onClick={() => setMode(tab.value)} type="button">
@@ -230,104 +225,37 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
           {notice ? <div className="alert alert-success">{notice}</div> : null}
         </div>
 
-        {mode === "learn" ? (
-          <LearnPanel learnComplete={learnComplete} onComplete={markLearnComplete} signedIn={signedIn} topic={activeTopic} />
-        ) : null}
-
+        {mode === "learn" ? <LearnPanel learnComplete={learnComplete} onComplete={markLearnComplete} signedIn={signedIn} topic={topic} /> : null}
         {mode === "practice" ? (
-          <section className="panel">
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div>
-                <h2 style={{ fontSize: "1.6rem" }}>Practice</h2>
-                <p>Use hints freely, then reveal solutions after checking your work.</p>
-              </div>
-              <div className="segmented" aria-label="Difficulty">
-                {(["easy", "medium", "hard"] as Difficulty[]).map((value) => (
-                  <button key={value} className={`segment ${difficulty === value ? "active" : ""}`} onClick={() => changeDifficulty(value)} type="button">
-                    {value}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {practiceResult ? <AttemptSummary label="Practice score" result={practiceResult} /> : null}
-
-            <QuestionList
-              allowHints
-              answers={practiceAnswers}
-              correctByQuestion={practiceResult?.correctByQuestion}
-              hintCounts={practiceHints}
-              onAnswer={(id, value) => setPracticeAnswers((answers) => ({ ...answers, [id]: value }))}
-              onHint={(id) => setPracticeHints((hints) => ({ ...hints, [id]: Math.min((hints[id] ?? 0) + 1, practiceQuestions.find((question) => question.id === id)?.hints.length ?? 0) }))}
-              onReveal={(id) => setPracticeSolutions((solutions) => ({ ...solutions, [id]: true }))}
-              questions={practiceQuestions}
-              revealedSolutions={practiceSolutions}
-            />
-
-            <div className="row">
-              <button className="btn btn-primary" onClick={submitPractice} type="button">
-                <Save size={16} />
-                Check practice
-              </button>
-              <button className="btn btn-ghost" onClick={resetPractice} type="button">
-                <RotateCcw size={16} />
-                New set
-              </button>
-            </div>
-          </section>
+          <PracticePanel
+            difficulty={difficulty}
+            onChangeDifficulty={changeDifficulty}
+            onReset={resetPractice}
+            onSubmit={submitPractice}
+            practiceAnswers={practiceAnswers}
+            practiceHints={practiceHints}
+            practiceQuestions={practiceQuestions}
+            practiceResult={practiceResult}
+            practiceSolutions={practiceSolutions}
+            setPracticeAnswers={setPracticeAnswers}
+            setPracticeHints={setPracticeHints}
+            setPracticeSolutions={setPracticeSolutions}
+          />
         ) : null}
-
         {mode === "test" ? (
-          <section className="panel">
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div>
-                <h2 style={{ fontSize: "1.6rem" }}>Test</h2>
-                <p>No hints, mixed difficulty, and a skill breakdown after submission.</p>
-              </div>
-              <button className={`btn ${timed ? "btn-primary" : "btn-ghost"}`} onClick={() => setTimed((value) => !value)} type="button">
-                <Clock size={16} />
-                {timed ? "Timed" : "Untimed"}
-              </button>
-            </div>
-
-            {!testStarted && !testResult ? (
-              <button className="btn btn-primary" onClick={startTest} type="button">
-                Start test
-              </button>
-            ) : null}
-
-            {testStarted || testResult ? (
-              <>
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
-                  <span className="badge">{testQuestions.length} questions</span>
-                  {timed ? <span className="badge">Time: {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</span> : null}
-                </div>
-                {timed && seconds <= 0 && !testResult ? <div className="alert alert-error">Time is up. Submit to score this attempt.</div> : null}
-                {testResult ? <ScorePanel result={testResult} showReview /> : null}
-                <QuestionList
-                  answers={testAnswers}
-                  correctByQuestion={testResult?.correctByQuestion}
-                  hintCounts={{}}
-                  onAnswer={(id, value) => setTestAnswers((answers) => ({ ...answers, [id]: value }))}
-                  onHint={() => undefined}
-                  onReveal={() => undefined}
-                  questions={testQuestions}
-                  revealedSolutions={testResult ? Object.fromEntries(testQuestions.map((question) => [question.id, true])) : {}}
-                />
-                <div className="row">
-                  {!testResult ? (
-                    <button className="btn btn-primary" onClick={submitTest} type="button">
-                      Submit test
-                    </button>
-                  ) : null}
-                  <button className="btn btn-ghost" onClick={resetTest} type="button">
-                    <RotateCcw size={16} />
-                    Reset
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </section>
+          <TestPanel
+            onReset={resetTest}
+            onStart={startTest}
+            onSubmit={submitTest}
+            seconds={seconds}
+            setTestAnswers={setTestAnswers}
+            setTimed={setTimed}
+            testAnswers={testAnswers}
+            testQuestions={testQuestions}
+            testResult={testResult}
+            testStarted={testStarted}
+            timed={timed}
+          />
         ) : null}
       </main>
 
@@ -353,7 +281,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
         </div>
         <div className="panel">
           <h3>Question bank</h3>
-          <p>{activeTopic.questionTemplates.length} generators across easy, medium, and hard difficulty.</p>
+          <p>{topic.questionTemplates.length} generators across easy, medium, and hard difficulty.</p>
           <div className="progress">
             <span style={{ width: "100%" }} />
           </div>
@@ -363,116 +291,108 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   );
 }
 
-function LearnPanel({
-  topic,
-  signedIn,
-  learnComplete,
-  onComplete,
-}: {
-  topic: NonNullable<ReturnType<typeof getTopicBySlug>>;
-  signedIn: boolean;
-  learnComplete: boolean;
-  onComplete: () => void;
-}) {
+function LearnPanel({ topic, signedIn, learnComplete, onComplete }: { topic: NonNullable<ReturnType<typeof getTopicBySlug>>; signedIn: boolean; learnComplete: boolean; onComplete: () => void }) {
   return (
     <section className="workspace-main">
       <div className="panel">
         <h2 style={{ fontSize: "1.6rem" }}>What you will master</h2>
-        <div className="learning-list">
-          {topic.objectives.map((objective) => (
-            <div className="learning-item" key={objective}>
-              <CheckCircle2 size={16} />
-              <span>{objective}</span>
-            </div>
-          ))}
-        </div>
+        <div className="learning-list">{topic.objectives.map((objective) => <LearningItem key={objective} text={objective} />)}</div>
       </div>
 
       <div className="panel">
         <h2 style={{ fontSize: "1.6rem" }}>Concept</h2>
-        {topic.lesson.map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
-        ))}
-        <button className="btn btn-primary" onClick={onComplete} type="button">
-          <CheckCircle2 size={16} />
-          {learnComplete ? "Completed" : signedIn ? "Mark complete" : "Log in to save"}
-        </button>
+        {topic.lesson.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        <button className="btn btn-primary" onClick={onComplete} type="button"><CheckCircle2 size={16} />{learnComplete ? "Completed" : signedIn ? "Mark complete" : "Log in to save"}</button>
       </div>
 
       <div className="panel">
         <h2 style={{ fontSize: "1.6rem" }}>Key formulas</h2>
-        <div className="formula-grid">
-          {topic.formulas.map((formula) => (
-            <div className="formula" key={formula.label}>
-              <strong>{formula.label}</strong>
-              <MathExpression block value={formula.latex} />
-            </div>
-          ))}
-        </div>
+        <div className="formula-grid">{topic.formulas.map((formula) => <div className="formula" key={formula.label}><strong>{formula.label}</strong><MathExpression block value={formula.latex} /></div>)}</div>
       </div>
 
-      <div className="panel">
-        <h2 style={{ fontSize: "1.6rem" }}>{topic.visual.title}</h2>
-        <p>{topic.visual.body}</p>
-      </div>
+      <div className="panel"><h2 style={{ fontSize: "1.6rem" }}>{topic.visual.title}</h2><p>{topic.visual.body}</p></div>
 
       <div className="grid grid-2">
-        <div className="panel">
-          <h2 style={{ fontSize: "1.4rem" }}>Common mistakes</h2>
-          <div className="grid">
-            {topic.commonMistakes.map((mistake) => (
-              <div className="hint" key={mistake}>
-                {mistake}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="panel">
-          <h2 style={{ fontSize: "1.4rem" }}>Worked examples</h2>
-          <div className="grid">
-            {topic.examples.map((example) => (
-              <details className="card" key={example.title}>
-                <summary>
-                  <strong>{example.title}</strong>: {example.prompt}
-                </summary>
-                <ol>
-                  {example.steps.map((step) => (
-                    <li key={step}>{step}</li>
-                  ))}
-                </ol>
-                <strong>Answer: {example.answer}</strong>
-              </details>
-            ))}
-          </div>
-        </div>
+        <div className="panel"><h2 style={{ fontSize: "1.4rem" }}>Common mistakes</h2><div className="grid">{topic.commonMistakes.map((mistake) => <div className="hint" key={mistake}>{mistake}</div>)}</div></div>
+        <div className="panel"><h2 style={{ fontSize: "1.4rem" }}>Worked examples</h2><div className="grid">{topic.examples.map((example) => <details className="card" key={example.title}><summary><strong>{example.title}</strong>: {example.prompt}</summary><ol>{example.steps.map((step) => <li key={step}>{step}</li>)}</ol><strong>Answer: {example.answer}</strong></details>)}</div></div>
       </div>
 
-      <div className="panel">
-        <h2 style={{ fontSize: "1.4rem" }}>Ready for the test when...</h2>
-        <div className="learning-list">
-          {topic.masteryChecks.map((check) => (
-            <div className="learning-item" key={check}>
-              <CheckCircle2 size={16} />
-              <span>{check}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <div className="panel"><h2 style={{ fontSize: "1.4rem" }}>Ready for the test when...</h2><div className="learning-list">{topic.masteryChecks.map((check) => <LearningItem key={check} text={check} />)}</div></div>
     </section>
   );
 }
 
-function QuestionList({
-  questions,
-  answers,
-  hintCounts,
-  revealedSolutions,
-  correctByQuestion,
-  allowHints = false,
-  onAnswer,
-  onHint,
-  onReveal,
-}: {
+function PracticePanel(props: {
+  difficulty: Difficulty;
+  onChangeDifficulty: (value: Difficulty) => void;
+  onReset: () => void;
+  onSubmit: () => void;
+  practiceAnswers: Record<string, string>;
+  practiceHints: Record<string, number>;
+  practiceQuestions: QuestionInstance[];
+  practiceResult: ScoreResult | null;
+  practiceSolutions: Record<string, boolean>;
+  setPracticeAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  setPracticeHints: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  setPracticeSolutions: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+}) {
+  return (
+    <section className="panel">
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div><h2 style={{ fontSize: "1.6rem" }}>Practice</h2><p>Use hints freely, then reveal solutions after checking your work.</p></div>
+        <div className="segmented" aria-label="Difficulty">{(["easy", "medium", "hard"] as Difficulty[]).map((value) => <button key={value} className={`segment ${props.difficulty === value ? "active" : ""}`} onClick={() => props.onChangeDifficulty(value)} type="button">{value}</button>)}</div>
+      </div>
+      {props.practiceResult ? <AttemptSummary label="Practice score" result={props.practiceResult} /> : null}
+      <QuestionList
+        allowHints
+        answers={props.practiceAnswers}
+        correctByQuestion={props.practiceResult?.correctByQuestion}
+        hintCounts={props.practiceHints}
+        onAnswer={(id, value) => props.setPracticeAnswers((answers) => ({ ...answers, [id]: value }))}
+        onHint={(id) => props.setPracticeHints((hints) => ({ ...hints, [id]: Math.min((hints[id] ?? 0) + 1, props.practiceQuestions.find((question) => question.id === id)?.hints.length ?? 0) }))}
+        onReveal={(id) => props.setPracticeSolutions((solutions) => ({ ...solutions, [id]: true }))}
+        questions={props.practiceQuestions}
+        revealedSolutions={props.practiceSolutions}
+      />
+      <div className="row"><button className="btn btn-primary" onClick={props.onSubmit} type="button"><Save size={16} />Check practice</button><button className="btn btn-ghost" onClick={props.onReset} type="button"><RotateCcw size={16} />New set</button></div>
+    </section>
+  );
+}
+
+function TestPanel(props: {
+  timed: boolean;
+  seconds: number;
+  testStarted: boolean;
+  testResult: ScoreResult | null;
+  testQuestions: QuestionInstance[];
+  testAnswers: Record<string, string>;
+  setTimed: React.Dispatch<React.SetStateAction<boolean>>;
+  setTestAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onStart: () => void;
+  onSubmit: () => void;
+  onReset: () => void;
+}) {
+  return (
+    <section className="panel">
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div><h2 style={{ fontSize: "1.6rem" }}>Test</h2><p>No hints, mixed difficulty, and a skill breakdown after submission.</p></div>
+        <button className={`btn ${props.timed ? "btn-primary" : "btn-ghost"}`} onClick={() => props.setTimed((value) => !value)} type="button"><Clock size={16} />{props.timed ? "Timed" : "Untimed"}</button>
+      </div>
+      {!props.testStarted && !props.testResult ? <button className="btn btn-primary" onClick={props.onStart} type="button">Start test</button> : null}
+      {props.testStarted || props.testResult ? (
+        <>
+          <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}><span className="badge">{props.testQuestions.length} questions</span>{props.timed ? <span className="badge">Time: {Math.floor(props.seconds / 60)}:{String(props.seconds % 60).padStart(2, "0")}</span> : null}</div>
+          {props.timed && props.seconds <= 0 && !props.testResult ? <div className="alert alert-error">Time is up. Submit to score this attempt.</div> : null}
+          {props.testResult ? <ScorePanel result={props.testResult} showReview /> : null}
+          <QuestionList answers={props.testAnswers} correctByQuestion={props.testResult?.correctByQuestion} hintCounts={{}} onAnswer={(id, value) => props.setTestAnswers((answers) => ({ ...answers, [id]: value }))} onHint={() => undefined} onReveal={() => undefined} questions={props.testQuestions} revealedSolutions={props.testResult ? Object.fromEntries(props.testQuestions.map((question) => [question.id, true])) : {}} />
+          <div className="row">{!props.testResult ? <button className="btn btn-primary" onClick={props.onSubmit} type="button">Submit test</button> : null}<button className="btn btn-ghost" onClick={props.onReset} type="button"><RotateCcw size={16} />Reset</button></div>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+function QuestionList({ questions, answers, hintCounts, revealedSolutions, correctByQuestion, allowHints = false, onAnswer, onHint, onReveal }: {
   questions: QuestionInstance[];
   answers: Record<string, string>;
   hintCounts: Record<string, number>;
@@ -490,58 +410,13 @@ function QuestionList({
         const isCorrect = correctByQuestion?.[question.id];
         return (
           <div className="question" key={question.id}>
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <span className="badge">Question {index + 1}</span>
-              <span className="badge badge-teal">{question.difficulty}</span>
-            </div>
+            <div className="row" style={{ justifyContent: "space-between" }}><span className="badge">Question {index + 1}</span><span className="badge badge-teal">{question.difficulty}</span></div>
             <strong>{question.prompt}</strong>
-
-            {question.choices ? (
-              <div className="choice-list">
-                {question.choices.map((choice, choiceIndex) => (
-                  <button className={`choice ${answers[question.id] === choice ? "active" : ""}`} key={`${question.id}-${choice}-${choiceIndex}`} onClick={() => onAnswer(question.id, choice)} type="button">
-                    {choice}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <input className="answer" onChange={(event) => onAnswer(question.id, event.target.value)} placeholder="Type your answer" value={answers[question.id] ?? ""} />
-            )}
-
-            {isCorrect != null ? (
-              <div className={isCorrect ? "alert alert-success" : "alert alert-error"}>
-                {isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />} {isCorrect ? "Correct" : `Review. Accepted answer: ${question.acceptedAnswers[0]}`}
-              </div>
-            ) : null}
-
-            {allowHints ? (
-              <div className="row">
-                <button className="btn btn-ghost" disabled={hintCount >= question.hints.length} onClick={() => onHint(question.id)} type="button">
-                  <Lightbulb size={16} />
-                  Hint {Math.min(hintCount + 1, question.hints.length)}
-                </button>
-                <button className="btn btn-ghost" onClick={() => onReveal(question.id)} type="button">
-                  Show solution
-                </button>
-              </div>
-            ) : null}
-
-            {question.hints.slice(0, hintCount).map((hint, hintIndex) => (
-              <div className="hint" key={hint}>
-                Hint {hintIndex + 1}: {hint}
-              </div>
-            ))}
-
-            {revealedSolutions[question.id] ? (
-              <div className="solution">
-                <strong>Solution</strong>
-                <ol>
-                  {question.solution.map((step) => (
-                    <li key={step}>{step}</li>
-                  ))}
-                </ol>
-              </div>
-            ) : null}
+            {question.choices ? <div className="choice-list">{question.choices.map((choice, choiceIndex) => <button className={`choice ${answers[question.id] === choice ? "active" : ""}`} key={`${question.id}-${choice}-${choiceIndex}`} onClick={() => onAnswer(question.id, choice)} type="button">{choice}</button>)}</div> : <input className="answer" onChange={(event) => onAnswer(question.id, event.target.value)} placeholder={answerPlaceholder(question.type)} value={answers[question.id] ?? ""} />}
+            {isCorrect != null ? <div className={isCorrect ? "alert alert-success" : "alert alert-error"}>{isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />} {isCorrect ? "Correct" : `Review. Accepted answer: ${question.acceptedAnswers[0]}`}</div> : null}
+            {allowHints ? <div className="row"><button className="btn btn-ghost" disabled={hintCount >= question.hints.length} onClick={() => onHint(question.id)} type="button"><Lightbulb size={16} />Hint {Math.min(hintCount + 1, question.hints.length)}</button><button className="btn btn-ghost" onClick={() => onReveal(question.id)} type="button">Show solution</button></div> : null}
+            {question.hints.slice(0, hintCount).map((hint, hintIndex) => <div className="hint" key={hint}>Hint {hintIndex + 1}: {hint}</div>)}
+            {revealedSolutions[question.id] ? <div className="solution"><strong>Solution</strong><ol>{question.solution.map((step) => <li key={step}>{step}</li>)}</ol></div> : null}
           </div>
         );
       })}
@@ -549,68 +424,26 @@ function QuestionList({
   );
 }
 
+function answerPlaceholder(type: QuestionInstance["type"]) {
+  if (type === "expression-input") return "Type an expression, like 2x + 3";
+  if (type === "equation-input") return "Type an equation, like y = 2x + 3";
+  if (type === "numeric-input") return "Type a number";
+  return "Type your answer";
+}
+
 function ScorePanel({ result, showReview = false }: { result: ScoreResult; showReview?: boolean }) {
   const recommendations = reviewRecommendations(result.skillBreakdown);
-
-  return (
-    <div className="panel" style={{ marginTop: 16 }}>
-      <div className="score" style={{ "--score": result.score } as CSSProperties}>
-        <div className="score-inner">{result.score}%</div>
-      </div>
-      <p style={{ textAlign: "center" }}>
-        {result.correct} of {result.total} correct
-      </p>
-      <div className="grid">
-        {Object.entries(result.skillBreakdown).map(([skill, value]) => (
-          <div key={skill}>
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong>{skill}</strong>
-              <span>{value.score}%</span>
-            </div>
-            <div className="progress">
-              <span style={{ width: `${value.score}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-      {showReview ? (
-        <div style={{ marginTop: 16 }}>
-          <h3>What to review</h3>
-          <div className="grid">
-            {recommendations.map((item) => (
-              <div className="hint" key={item}>
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
+  return <div className="panel" style={{ marginTop: 16 }}><div className="score" style={{ "--score": result.score } as CSSProperties}><div className="score-inner">{result.score}%</div></div><p style={{ textAlign: "center" }}>{result.correct} of {result.total} correct</p><div className="grid">{Object.entries(result.skillBreakdown).map(([skill, value]) => <div key={skill}><div className="row" style={{ justifyContent: "space-between" }}><strong>{skill}</strong><span>{value.score}%</span></div><div className="progress"><span style={{ width: `${value.score}%` }} /></div></div>)}</div>{showReview ? <div style={{ marginTop: 16 }}><h3>What to review</h3><div className="grid">{recommendations.map((item) => <div className="hint" key={item}>{item}</div>)}</div></div> : null}</div>;
 }
 
 function AttemptSummary({ label, result }: { label: string; result: ScoreResult }) {
-  return (
-    <div className="attempt-summary">
-      <div>
-        <span className="eyebrow">{label}</span>
-        <h3>{result.score}%</h3>
-        <p>
-          {result.correct} of {result.total} correct
-        </p>
-      </div>
-      <div className="attempt-meter" style={{ "--score": result.score } as CSSProperties}>
-        <span>{result.score}%</span>
-      </div>
-    </div>
-  );
+  return <div className="attempt-summary"><div><span className="eyebrow">{label}</span><h3>{result.score}%</h3><p>{result.correct} of {result.total} correct</p></div><div className="attempt-meter" style={{ "--score": result.score } as CSSProperties}><span>{result.score}%</span></div></div>;
 }
 
 function ProgressLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="row" style={{ justifyContent: "space-between" }}>
-      <span className="muted">{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
+  return <div className="row" style={{ justifyContent: "space-between" }}><span className="muted">{label}</span><strong>{value}</strong></div>;
+}
+
+function LearningItem({ text }: { text: string }) {
+  return <div className="learning-item"><CheckCircle2 size={16} /><span>{text}</span></div>;
 }
