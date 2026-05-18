@@ -1,3 +1,4 @@
+import { linearEquations } from "@/content/deepAlgebra1Linear";
 import type { Difficulty, Formula, QuestionInstance, QuestionTemplate, Topic, VisualAid, WorkedExample } from "@/content/types";
 
 type DeepTopicContent = {
@@ -463,12 +464,17 @@ const foundations: Record<string, DeepTopicContent> = {
   },
 };
 
+const deepTopics: Record<string, DeepTopicContent> = {
+  ...foundations,
+  ...linearEquations,
+};
+
 export function getEnhancedQuestionTemplates(topic: Topic) {
-  return foundations[topic.slug]?.questionTemplates ?? topic.questionTemplates;
+  return deepTopics[topic.slug]?.questionTemplates ?? topic.questionTemplates;
 }
 
 export function getEnhancedTopic(topic: Topic): Topic {
-  const deep = foundations[topic.slug];
+  const deep = deepTopics[topic.slug];
   if (!deep) return topic;
 
   return {
@@ -486,5 +492,5 @@ export function getEnhancedTopic(topic: Topic): Topic {
 }
 
 export function isDeepenedTopic(slug: string) {
-  return Boolean(foundations[slug]);
+  return Boolean(deepTopics[slug]);
 }
