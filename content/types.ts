@@ -28,6 +28,10 @@ export type QuestionInstance = {
   choices?: string[];
   hints: string[];
   solution: string[];
+  courseId?: string;
+  unitId?: string;
+  topicId?: string;
+  topicTitle?: string;
 };
 
 export type QuestionTemplate = {
