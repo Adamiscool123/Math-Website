@@ -14,6 +14,7 @@ import { getEnhancedTopic, isDeepenedTopic } from "@/content/enhancedAlgebra1";
 const foundationSlugs = ["order-of-operations", "properties-of-real-numbers", "evaluating-expressions", "writing-expressions"];
 const linearEquationSlugs = ["one-step-equations", "two-step-equations", "multi-step-equations", "variables-on-both-sides", "literal-equations"];
 const inequalitySlugs = ["one-step-inequalities", "multi-step-inequalities", "compound-inequalities", "absolute-value-equations-inequalities"];
+const functionSlugs = ["domain-range", "function-notation", "evaluating-functions", "linear-vs-nonlinear"];
 
 describe("Algebra 1 content", () => {
   it("ships all planned Algebra 1 units and topics", () => {
@@ -36,8 +37,8 @@ describe("Algebra 1 content", () => {
     }
   });
 
-  it("deepens Units 1-3 with richer lessons and specific question types", () => {
-    for (const slug of [...foundationSlugs, ...linearEquationSlugs, ...inequalitySlugs]) {
+  it("deepens Units 1-4 with richer lessons and specific question types", () => {
+    for (const slug of [...foundationSlugs, ...linearEquationSlugs, ...inequalitySlugs, ...functionSlugs]) {
       const topic = getTopicBySlug(slug);
       expect(topic).toBeTruthy();
       const enhanced = getEnhancedTopic(topic!);
@@ -70,7 +71,7 @@ describe("Algebra 1 content", () => {
   });
 
   it("generates 30 question unit tests and a 50 question Algebra 1 final mastery test", () => {
-    const unitTest = generateUnitTestSet(algebra1Course.units[2]);
+    const unitTest = generateUnitTestSet(algebra1Course.units[3]);
     const finalTest = generateAlgebra1FinalTestSet();
 
     expect(unitTest).toHaveLength(UNIT_TEST_QUESTION_COUNT);
@@ -85,7 +86,7 @@ describe("Algebra 1 content", () => {
   });
 
   it("builds per-topic assessment results for mastery downgrades", () => {
-    const unitTest = generateUnitTestSet(algebra1Course.units[2]);
+    const unitTest = generateUnitTestSet(algebra1Course.units[3]);
     const correctByQuestion = Object.fromEntries(unitTest.map((question, index) => [question.id, index % 2 === 0]));
     const results = buildTopicResults(unitTest, correctByQuestion);
 
