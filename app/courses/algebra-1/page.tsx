@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle, Sigma } from "lucide-react";
 import Link from "next/link";
 import { algebra1Course } from "@/content/algebra1";
+import { ALGEBRA_1_FINAL_TEST_QUESTION_COUNT, TOPIC_TEST_QUESTION_COUNT } from "@/content/assessmentSets";
 import { calculateCourseMastery, calculateTopicMastery, countMasteredTopics } from "@/lib/mastery";
 import { getCourseProgress } from "@/lib/progress";
 import { getCurrentUser } from "@/lib/session";
@@ -19,6 +20,11 @@ export default async function AlgebraOnePage() {
           <span className="eyebrow">Course</span>
           <h1 style={{ fontSize: "clamp(2.5rem, 7vw, 5rem)" }}>{algebra1Course.title}</h1>
           <p>{algebra1Course.description}</p>
+          <div className="row" style={{ marginTop: 18 }}>
+            <Link className="btn btn-primary" href="/courses/algebra-1/final-test">
+              Take {ALGEBRA_1_FINAL_TEST_QUESTION_COUNT}-question final test
+            </Link>
+          </div>
         </div>
         <div className="panel" style={{ minWidth: 260 }}>
           <div className="row" style={{ justifyContent: "space-between" }}>
@@ -50,19 +56,28 @@ export default async function AlgebraOnePage() {
                 const row = progress[topic.id];
                 const mastery = calculateTopicMastery(row);
                 return (
-                  <Link className="topic-row" href={`/courses/algebra-1/${topic.slug}?mode=learn`} key={topic.id}>
-                    <span>
+                  <div className="topic-row" key={topic.id}>
+                    <Link href={`/courses/algebra-1/${topic.slug}?mode=learn`}>
                       <strong>{topic.title}</strong>
                       <br />
                       <span className="muted">
-                        {topic.summary} Practice {Math.round(row?.practice_best_score ?? 0)}% / Test {Math.round(row?.test_best_score ?? 0)}%
+                        Practice 5 questions / Test 10 questions / Topic Test {TOPIC_TEST_QUESTION_COUNT} questions
+                      </span>
+                      <br />
+                      <span className="muted">
+                        Practice {Math.round(row?.practice_best_score ?? 0)}% / Test {Math.round(row?.test_best_score ?? 0)}%
+                      </span>
+                    </Link>
+                    <span className="row" style={{ gap: 10 }}>
+                      <Link className="badge badge-teal" href={`/courses/algebra-1/${topic.slug}/topic-test`}>
+                        Topic test
+                      </Link>
+                      <span className={mastery >= 100 ? "badge badge-teal" : "badge"}>
+                        {mastery >= 100 ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                        {mastery}%
                       </span>
                     </span>
-                    <span className={mastery >= 100 ? "badge badge-teal" : "badge"}>
-                      {mastery >= 100 ? <CheckCircle2 size={15} /> : <Circle size={15} />}
-                      {mastery}%
-                    </span>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
