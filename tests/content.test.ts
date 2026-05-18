@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { algebra1Course, algebra1Topics, generatePracticeSet, generateTestSet } from "@/content/algebra1";
+import { algebra1Course, algebra1Topics, generatePracticeSet, generateTestSet, getTopicBySlug } from "@/content/algebra1";
 import {
   ALGEBRA_1_FINAL_TEST_QUESTION_COUNT,
   PRACTICE_QUESTION_COUNT,
@@ -9,6 +9,7 @@ import {
   generateAlgebra1FinalTestSet,
   generateUnitTestSet,
 } from "@/content/assessmentSets";
+import { getEnhancedTopic, isDeepenedTopic } from "@/content/deepAlgebra1";
 
 describe("Algebra 1 content", () => {
   it("ships all planned Algebra 1 units and topics", () => {
@@ -31,8 +32,27 @@ describe("Algebra 1 content", () => {
     }
   });
 
+  it("deepens every Foundations topic with richer lessons and specific question types", () => {
+    const foundationSlugs = ["order-of-operations", "properties-of-real-numbers", "evaluating-expressions", "writing-expressions"];
+
+    for (const slug of foundationSlugs) {
+      const topic = getTopicBySlug(slug);
+      expect(topic).toBeTruthy();
+      const enhanced = getEnhancedTopic(topic!);
+      const sampleQuestions = enhanced.questionTemplates.map((template) => template.generate());
+
+      expect(isDeepenedTopic(slug)).toBe(true);
+      expect(enhanced.lesson.length).toBeGreaterThanOrEqual(6);
+      expect(enhanced.commonMistakes.length).toBeGreaterThanOrEqual(5);
+      expect(enhanced.objectives.length).toBeGreaterThanOrEqual(4);
+      expect(enhanced.questionTemplates).toHaveLength(15);
+      expect(new Set(sampleQuestions.map((question) => question.skill)).size).toBeGreaterThanOrEqual(3);
+      expect(sampleQuestions.some((question) => question.type === "multiple-choice" || question.type === "expression-input" || question.type === "numeric-input")).toBe(true);
+    }
+  });
+
   it("generates complete practice and regular topic test questions", () => {
-    const topic = algebra1Topics[0];
+    const topic = getEnhancedTopic(algebra1Topics[0]);
     const practice = generatePracticeSet(topic, "easy");
     const test = generateTestSet(topic);
 
@@ -43,7 +63,7 @@ describe("Algebra 1 content", () => {
       expect(question.acceptedAnswers.length).toBeGreaterThan(0);
       expect(question.hints).toHaveLength(3);
       expect(question.solution.length).toBeGreaterThanOrEqual(3);
-      expect(question.skill).toContain(topic.title);
+      expect(question.skill).toBeTruthy();
     }
   });
 
@@ -77,7 +97,7 @@ describe("Algebra 1 content", () => {
   });
 
   it("does not generate duplicate multiple-choice options", () => {
-    for (const topic of algebra1Topics) {
+    for (const topic of algebra1Topics.map(getEnhancedTopic)) {
       for (const template of topic.questionTemplates) {
         for (let attempt = 0; attempt < 20; attempt += 1) {
           const question = template.generate();
