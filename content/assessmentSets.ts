@@ -1,4 +1,5 @@
 import { algebra1Course, algebra1Topics } from "@/content/algebra1";
+import { getEnhancedTopic } from "@/content/deepAlgebra1";
 import type { Difficulty, QuestionInstance, QuestionTemplate, Topic, Unit } from "@/content/types";
 
 export const PRACTICE_QUESTION_COUNT = 5;
@@ -35,7 +36,8 @@ function chooseTemplate(topic: Topic, index: number) {
 function generateBalancedAssessment(topics: Topic[], count: number): QuestionInstance[] {
   if (!topics.length) return [];
 
-  const shuffledTopics = shuffled(topics);
+  const enhancedTopics = topics.map(getEnhancedTopic);
+  const shuffledTopics = shuffled(enhancedTopics);
   const questions: QuestionInstance[] = [];
   let round = 0;
 
