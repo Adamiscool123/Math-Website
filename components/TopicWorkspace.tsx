@@ -1,11 +1,11 @@
 "use client";
 
 import { CheckCircle2, Clock, Lightbulb, RotateCcw, Save, XCircle } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { generatePracticeSet, generateTestSet, getTopicBySlug } from "@/content/algebra1";
 import { getEnhancedTopic, isDeepenedTopic } from "@/content/deepAlgebra1";
-import type { Difficulty, QuestionInstance } from "@/content/types";
+import type { Difficulty, QuestionInstance, Topic } from "@/content/types";
 import { MathExpression } from "@/components/MathExpression";
 import { calculateTopicMastery } from "@/lib/mastery";
 import { reviewRecommendations, scoreQuestions } from "@/lib/scoring";
@@ -291,7 +291,7 @@ export function TopicWorkspace({ topicSlug, initialMode, signedIn, progress }: P
   );
 }
 
-function LearnPanel({ topic, signedIn, learnComplete, onComplete }: { topic: NonNullable<ReturnType<typeof getTopicBySlug>>; signedIn: boolean; learnComplete: boolean; onComplete: () => void }) {
+function LearnPanel({ topic, signedIn, learnComplete, onComplete }: { topic: Topic; signedIn: boolean; learnComplete: boolean; onComplete: () => void }) {
   return (
     <section className="workspace-main">
       <div className="panel">
@@ -332,9 +332,9 @@ function PracticePanel(props: {
   practiceQuestions: QuestionInstance[];
   practiceResult: ScoreResult | null;
   practiceSolutions: Record<string, boolean>;
-  setPracticeAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  setPracticeHints: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  setPracticeSolutions: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  setPracticeAnswers: Dispatch<SetStateAction<Record<string, string>>>;
+  setPracticeHints: Dispatch<SetStateAction<Record<string, number>>>;
+  setPracticeSolutions: Dispatch<SetStateAction<Record<string, boolean>>>;
 }) {
   return (
     <section className="panel">
@@ -366,8 +366,8 @@ function TestPanel(props: {
   testResult: ScoreResult | null;
   testQuestions: QuestionInstance[];
   testAnswers: Record<string, string>;
-  setTimed: React.Dispatch<React.SetStateAction<boolean>>;
-  setTestAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  setTimed: Dispatch<SetStateAction<boolean>>;
+  setTestAnswers: Dispatch<SetStateAction<Record<string, string>>>;
   onStart: () => void;
   onSubmit: () => void;
   onReset: () => void;
