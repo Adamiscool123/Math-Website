@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { useState } from "react";
 import type { CSSProperties } from "react";
+import { buildTopicResults, MASTERY_TEST_THRESHOLD } from "@/content/assessmentSets";
 import type { QuestionInstance } from "@/content/types";
 import { reviewRecommendations, scoreQuestions } from "@/lib/scoring";
 
@@ -16,21 +17,47 @@ type Props = {
   questions: QuestionInstance[];
   backHref: string;
   backLabel: string;
+  courseId?: string;
+  assessmentType?: "unit" | "final";
 };
 
-export function AssessmentRunner({ title, eyebrow, description, questions, backHref, backLabel }: Props) {
+export function AssessmentRunner({ title, eyebrow, description, questions, backHref, backLabel, courseId, assessmentType }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [started, setStarted] = useState(false);
+  const [notice, setNotice] = useState("");
 
   function start() {
     setStarted(true);
     setResult(null);
     setAnswers({});
+    setNotice("");
   }
 
-  function submit() {
-    setResult(scoreQuestions(questions, answers));
+  async function submit() {
+    const scored = scoreQuestions(questions, answers);
+    setResult(scored);
+
+    if (!courseId || !assessmentType) return;
+
+    const topicResults = buildTopicResults(questions, scored.correctByQuestion);
+    const response = await fetch(`/api/progress/${courseId}/assessment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        assessmentType,
+        score: scored.score,
+        totalQuestions: scored.total,
+        correctAnswers: scored.correct,
+        topicResults,
+      }),
+    });
+
+    if (response.ok) {
+      setNotice(scored.score >= MASTERY_TEST_THRESHOLD ? "Mastery saved. Great work." : "Saved. Missed skills were downgraded so you know what to remaster.");
+    } else {
+      setNotice("Sign in to save this assessment and update mastery.");
+    }
   }
 
   const recommendations = result ? reviewRecommendations(result.skillBreakdown) : [];
@@ -43,15 +70,17 @@ export function AssessmentRunner({ title, eyebrow, description, questions, backH
         <p>{description}</p>
         <div className="row" style={{ marginTop: 18 }}>
           <span className="badge">{questions.length} questions</span>
-          <span className="badge badge-teal">No hints</span>
+          <span className="badge badge-teal">90%+ for mastery</span>
+          <span className="badge">No hints</span>
           <Link className="btn btn-ghost" href={backHref}>{backLabel}</Link>
         </div>
+        {notice ? <div className={notice.includes("downgraded") ? "alert alert-error" : "alert alert-success"} style={{ marginTop: 14 }}>{notice}</div> : null}
       </section>
 
       {!started ? (
         <section className="panel">
           <h2 style={{ fontSize: "1.6rem" }}>Ready?</h2>
-          <p>This is a scored assessment. Work through every question, then submit to see your score, solutions, and review recommendations.</p>
+          <p>This is a mastery assessment. Score 90% or higher to keep the check. If you miss skills, those topic scores drop so you know exactly what to redo.</p>
           <button className="btn btn-primary" onClick={start} type="button">Start assessment</button>
         </section>
       ) : null}
@@ -78,7 +107,7 @@ export function AssessmentRunner({ title, eyebrow, description, questions, backH
                 <div className="question" key={question.id}>
                   <div className="row" style={{ justifyContent: "space-between" }}>
                     <span className="badge">Question {index + 1}</span>
-                    <span className="badge badge-teal">{question.difficulty}</span>
+                    <span className="badge badge-teal">{question.topicTitle ?? question.difficulty}</span>
                   </div>
                   <strong>{question.prompt}</strong>
                   {question.choices ? (
