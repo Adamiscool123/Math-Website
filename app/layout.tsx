@@ -39,11 +39,54 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         "9": "⁹",
         "+": "⁺",
         "-": "⁻",
+        "=": "⁼",
         "(": "⁽",
         ")": "⁾",
+        "a": "ᵃ",
+        "b": "ᵇ",
+        "c": "ᶜ",
+        "d": "ᵈ",
+        "e": "ᵉ",
+        "f": "ᶠ",
+        "g": "ᵍ",
+        "h": "ʰ",
+        "i": "ⁱ",
+        "j": "ʲ",
+        "k": "ᵏ",
+        "l": "ˡ",
+        "m": "ᵐ",
         "n": "ⁿ",
+        "o": "ᵒ",
+        "p": "ᵖ",
+        "q": "ᑫ",
+        "r": "ʳ",
+        "s": "ˢ",
         "t": "ᵗ",
+        "u": "ᵘ",
+        "v": "ᵛ",
+        "w": "ʷ",
         "x": "ˣ",
+        "y": "ʸ",
+        "z": "ᶻ",
+        "A": "ᴬ",
+        "B": "ᴮ",
+        "D": "ᴰ",
+        "E": "ᴱ",
+        "G": "ᴳ",
+        "H": "ᴴ",
+        "I": "ᴵ",
+        "J": "ᴶ",
+        "K": "ᴷ",
+        "L": "ᴸ",
+        "M": "ᴹ",
+        "N": "ᴺ",
+        "O": "ᴼ",
+        "P": "ᴾ",
+        "R": "ᴿ",
+        "T": "ᵀ",
+        "U": "ᵁ",
+        "V": "ⱽ",
+        "W": "ᵂ",
         " ": ""
       };
 
@@ -90,13 +133,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         var formatted = replaceSqrt(text);
         formatted = formatted.replace(/<=/g, "≤").replace(/>=/g, "≥").replace(/!=/g, "≠");
         formatted = formatted.replace(/\*/g, "·");
-        formatted = formatted.replace(/\^\(([^)]{1,24})\)/g, function (_, power) {
+        formatted = formatted.replace(/\^\(([^)]{1,32})\)/g, function (_, power) {
           return toSuperscript("(" + power + ")");
         });
         formatted = formatted.replace(/\^(-?\d+)/g, function (_, power) {
           return toSuperscript(power);
         });
-        formatted = formatted.replace(/\^([ntx])/g, function (_, power) {
+        formatted = formatted.replace(/\^([A-Za-z])/g, function (_, power) {
           return toSuperscript(power);
         });
         return formatted;
