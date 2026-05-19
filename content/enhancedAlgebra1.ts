@@ -4,6 +4,7 @@ import { inequalities } from "@/content/deepAlgebra1Inequalities";
 import { linearFunctions } from "@/content/deepAlgebra1LinearFunctions";
 import { exponentsPolynomials } from "@/content/deepAlgebra1Polynomials";
 import { quadraticFunctions } from "@/content/deepAlgebra1Quadratics";
+import { radicalsIrrationals } from "@/content/deepAlgebra1Radicals";
 import { systemsEquations } from "@/content/deepAlgebra1Systems";
 import type { QuestionTemplate, Topic, WorkedExample } from "@/content/types";
 
@@ -61,9 +62,12 @@ export function getEnhancedTopic(topic: Topic): Topic {
   const quadraticTopic = quadraticFunctions[topic.slug];
   if (quadraticTopic) return applyDeepTopic(topic, quadraticTopic);
 
+  const radicalTopic = radicalsIrrationals[topic.slug];
+  if (radicalTopic) return applyDeepTopic(topic, radicalTopic);
+
   return getBaseEnhancedTopic(topic);
 }
 
 export function isDeepenedTopic(slug: string) {
-  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || Boolean(exponentsPolynomials[slug]) || Boolean(quadraticFunctions[slug]) || isBaseDeepenedTopic(slug);
+  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || Boolean(exponentsPolynomials[slug]) || Boolean(quadraticFunctions[slug]) || Boolean(radicalsIrrationals[slug]) || isBaseDeepenedTopic(slug);
 }
