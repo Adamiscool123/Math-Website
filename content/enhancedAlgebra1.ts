@@ -2,6 +2,7 @@ import { getEnhancedTopic as getBaseEnhancedTopic, isDeepenedTopic as isBaseDeep
 import { functionsRelations } from "@/content/deepAlgebra1Functions";
 import { inequalities } from "@/content/deepAlgebra1Inequalities";
 import { linearFunctions } from "@/content/deepAlgebra1LinearFunctions";
+import { exponentsPolynomials } from "@/content/deepAlgebra1Polynomials";
 import { systemsEquations } from "@/content/deepAlgebra1Systems";
 import type { QuestionTemplate, Topic, WorkedExample } from "@/content/types";
 
@@ -53,9 +54,12 @@ export function getEnhancedTopic(topic: Topic): Topic {
   const systemsTopic = systemsEquations[topic.slug];
   if (systemsTopic) return applyDeepTopic(topic, systemsTopic);
 
+  const polynomialTopic = exponentsPolynomials[topic.slug];
+  if (polynomialTopic) return applyDeepTopic(topic, polynomialTopic);
+
   return getBaseEnhancedTopic(topic);
 }
 
 export function isDeepenedTopic(slug: string) {
-  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || isBaseDeepenedTopic(slug);
+  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || Boolean(exponentsPolynomials[slug]) || isBaseDeepenedTopic(slug);
 }
