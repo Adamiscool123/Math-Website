@@ -2,6 +2,7 @@ import { getEnhancedTopic as getBaseEnhancedTopic, isDeepenedTopic as isBaseDeep
 import { functionsRelations } from "@/content/deepAlgebra1Functions";
 import { inequalities } from "@/content/deepAlgebra1Inequalities";
 import { linearFunctions } from "@/content/deepAlgebra1LinearFunctions";
+import { systemsEquations } from "@/content/deepAlgebra1Systems";
 import type { QuestionTemplate, Topic, WorkedExample } from "@/content/types";
 
 function examplesFromTemplates(templates: QuestionTemplate[]): WorkedExample[] {
@@ -49,9 +50,12 @@ export function getEnhancedTopic(topic: Topic): Topic {
   const linearFunctionTopic = linearFunctions[topic.slug];
   if (linearFunctionTopic) return applyDeepTopic(topic, linearFunctionTopic);
 
+  const systemsTopic = systemsEquations[topic.slug];
+  if (systemsTopic) return applyDeepTopic(topic, systemsTopic);
+
   return getBaseEnhancedTopic(topic);
 }
 
 export function isDeepenedTopic(slug: string) {
-  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || isBaseDeepenedTopic(slug);
+  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || isBaseDeepenedTopic(slug);
 }
