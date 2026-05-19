@@ -1,4 +1,5 @@
 import { getEnhancedTopic as getBaseEnhancedTopic, isDeepenedTopic as isBaseDeepenedTopic } from "@/content/deepAlgebra1";
+import { exponentialsSequences } from "@/content/deepAlgebra1Exponentials";
 import { functionsRelations } from "@/content/deepAlgebra1Functions";
 import { inequalities } from "@/content/deepAlgebra1Inequalities";
 import { linearFunctions } from "@/content/deepAlgebra1LinearFunctions";
@@ -65,9 +66,12 @@ export function getEnhancedTopic(topic: Topic): Topic {
   const radicalTopic = radicalsIrrationals[topic.slug];
   if (radicalTopic) return applyDeepTopic(topic, radicalTopic);
 
+  const exponentialTopic = exponentialsSequences[topic.slug];
+  if (exponentialTopic) return applyDeepTopic(topic, exponentialTopic);
+
   return getBaseEnhancedTopic(topic);
 }
 
 export function isDeepenedTopic(slug: string) {
-  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || Boolean(exponentsPolynomials[slug]) || Boolean(quadraticFunctions[slug]) || Boolean(radicalsIrrationals[slug]) || isBaseDeepenedTopic(slug);
+  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || Boolean(exponentsPolynomials[slug]) || Boolean(quadraticFunctions[slug]) || Boolean(radicalsIrrationals[slug]) || Boolean(exponentialsSequences[slug]) || isBaseDeepenedTopic(slug);
 }
