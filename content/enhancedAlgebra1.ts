@@ -6,6 +6,7 @@ import { linearFunctions } from "@/content/deepAlgebra1LinearFunctions";
 import { exponentsPolynomials } from "@/content/deepAlgebra1Polynomials";
 import { quadraticFunctions } from "@/content/deepAlgebra1Quadratics";
 import { radicalsIrrationals } from "@/content/deepAlgebra1Radicals";
+import { statisticsTopics } from "@/content/deepAlgebra1Statistics";
 import { systemsEquations } from "@/content/deepAlgebra1Systems";
 import type { QuestionTemplate, Topic, WorkedExample } from "@/content/types";
 
@@ -69,9 +70,12 @@ export function getEnhancedTopic(topic: Topic): Topic {
   const exponentialTopic = exponentialsSequences[topic.slug];
   if (exponentialTopic) return applyDeepTopic(topic, exponentialTopic);
 
+  const statisticsTopic = statisticsTopics[topic.slug];
+  if (statisticsTopic) return applyDeepTopic(topic, statisticsTopic);
+
   return getBaseEnhancedTopic(topic);
 }
 
 export function isDeepenedTopic(slug: string) {
-  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || Boolean(exponentsPolynomials[slug]) || Boolean(quadraticFunctions[slug]) || Boolean(radicalsIrrationals[slug]) || Boolean(exponentialsSequences[slug]) || isBaseDeepenedTopic(slug);
+  return Boolean(inequalities[slug]) || Boolean(functionsRelations[slug]) || Boolean(linearFunctions[slug]) || Boolean(systemsEquations[slug]) || Boolean(exponentsPolynomials[slug]) || Boolean(quadraticFunctions[slug]) || Boolean(radicalsIrrationals[slug]) || Boolean(exponentialsSequences[slug]) || Boolean(statisticsTopics[slug]) || isBaseDeepenedTopic(slug);
 }
