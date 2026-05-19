@@ -9,15 +9,16 @@ import { radicalsIrrationals } from "@/content/deepAlgebra1Radicals";
 import { statisticsTopics } from "@/content/deepAlgebra1Statistics";
 import { systemsEquations } from "@/content/deepAlgebra1Systems";
 import type { QuestionTemplate, Topic, WorkedExample } from "@/content/types";
+import { formatMathText } from "@/lib/mathText";
 
 function examplesFromTemplates(templates: QuestionTemplate[]): WorkedExample[] {
   return templates.slice(0, 3).map((item, index) => {
     const question = item.generate();
     return {
       title: `Example ${index + 1}`,
-      prompt: question.prompt,
-      steps: question.solution,
-      answer: question.acceptedAnswers[0],
+      prompt: formatMathText(question.prompt),
+      steps: question.solution.map(formatMathText),
+      answer: formatMathText(question.acceptedAnswers[0]),
     };
   });
 }
