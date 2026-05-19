@@ -1,5 +1,5 @@
 export type Difficulty = "easy" | "medium" | "hard";
-export type QuestionType = "free-response" | "multiple-choice";
+export type QuestionType = "free-response" | "multiple-choice" | "numeric-input" | "expression-input" | "equation-input";
 
 export type Formula = {
   label: string;
@@ -28,6 +28,10 @@ export type QuestionInstance = {
   choices?: string[];
   hints: string[];
   solution: string[];
+  courseId?: string;
+  unitId?: string;
+  topicId?: string;
+  topicTitle?: string;
 };
 
 export type QuestionTemplate = {

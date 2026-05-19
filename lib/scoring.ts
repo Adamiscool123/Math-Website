@@ -5,14 +5,69 @@ export function normalizeAnswer(value: string) {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "")
-    .replace(/−/g, "-");
+    .replace(/[−–—]/g, "-");
+}
+
+export function normalizeMathExpression(value: string) {
+  return normalizeAnswer(value)
+    .replace(/\*\*/g, "^")
+    .replace(/[·×]/g, "*")
+    .replace(/\\cdot/g, "*")
+    .replace(/\*/g, "")
+    .replace(/\^1(?!\d)/g, "")
+    .replace(/\b1([a-z])/g, "$1")
+    .replace(/-1([a-z])/g, "-$1")
+    .replace(/^\+/, "");
+}
+
+function parseNumeric(value: string) {
+  const normalized = normalizeAnswer(value).replace(/,/g, "");
+  if (!/^[-+]?\d+(\.\d+)?$/.test(normalized)) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function equivalentNumber(answer: string, submitted: string) {
+  const expected = parseNumeric(answer);
+  const actual = parseNumeric(submitted);
+  if (expected == null || actual == null) return false;
+  return Math.abs(expected - actual) < 1e-9;
+}
+
+function equivalentEquation(answer: string, submitted: string) {
+  const expectedParts = answer.split("=");
+  const actualParts = submitted.split("=");
+  if (expectedParts.length !== 2 || actualParts.length !== 2) return false;
+
+  const [expectedLeft, expectedRight] = expectedParts.map(normalizeMathExpression);
+  const [actualLeft, actualRight] = actualParts.map(normalizeMathExpression);
+
+  return (expectedLeft === actualLeft && expectedRight === actualRight) || (expectedLeft === actualRight && expectedRight === actualLeft);
 }
 
 export function checkAnswer(question: QuestionInstance, rawAnswer: string) {
   const submitted = normalizeAnswer(rawAnswer);
   if (!submitted) return false;
 
-  return question.acceptedAnswers.some((answer) => normalizeAnswer(answer) === submitted);
+  return question.acceptedAnswers.some((answer) => {
+    if (question.type === "numeric-input") {
+      return equivalentNumber(answer, submitted) || normalizeAnswer(answer) === submitted;
+    }
+
+    if (question.type === "expression-input") {
+      return normalizeMathExpression(answer) === normalizeMathExpression(submitted);
+    }
+
+    if (question.type === "equation-input") {
+      return equivalentEquation(answer, submitted) || normalizeMathExpression(answer) === normalizeMathExpression(submitted);
+    }
+
+    if (question.type === "multiple-choice") {
+      return normalizeAnswer(answer) === submitted;
+    }
+
+    return normalizeAnswer(answer) === submitted || normalizeMathExpression(answer) === normalizeMathExpression(submitted);
+  });
 }
 
 export function scoreQuestions(questions: QuestionInstance[], answers: Record<string, string>) {

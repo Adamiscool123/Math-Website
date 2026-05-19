@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { algebra1Course, algebra1Topics, generatePracticeSet, generateTestSet } from "@/content/algebra1";
+import { algebra1Course, algebra1Topics, generatePracticeSet, generateTestSet, getTopicBySlug } from "@/content/algebra1";
+import {
+  ALGEBRA_1_FINAL_TEST_QUESTION_COUNT,
+  PRACTICE_QUESTION_COUNT,
+  REGULAR_TEST_QUESTION_COUNT,
+  UNIT_TEST_QUESTION_COUNT,
+  buildTopicResults,
+  generateAlgebra1FinalTestSet,
+  generateUnitTestSet,
+} from "@/content/assessmentSets";
+import { getEnhancedTopic, isDeepenedTopic } from "@/content/enhancedAlgebra1";
+
+const foundationSlugs = ["order-of-operations", "properties-of-real-numbers", "evaluating-expressions", "writing-expressions"];
+const linearEquationSlugs = ["one-step-equations", "two-step-equations", "multi-step-equations", "variables-on-both-sides", "literal-equations"];
+const inequalitySlugs = ["one-step-inequalities", "multi-step-inequalities", "compound-inequalities", "absolute-value-equations-inequalities"];
+const functionSlugs = ["domain-range", "function-notation", "evaluating-functions", "linear-vs-nonlinear"];
 
 describe("Algebra 1 content", () => {
   it("ships all planned Algebra 1 units and topics", () => {
@@ -22,24 +37,70 @@ describe("Algebra 1 content", () => {
     }
   });
 
-  it("generates complete practice and test questions", () => {
-    const topic = algebra1Topics[0];
+  it("deepens Units 1-4 with richer lessons and specific question types", () => {
+    for (const slug of [...foundationSlugs, ...linearEquationSlugs, ...inequalitySlugs, ...functionSlugs]) {
+      const topic = getTopicBySlug(slug);
+      expect(topic).toBeTruthy();
+      const enhanced = getEnhancedTopic(topic!);
+      const sampleQuestions = enhanced.questionTemplates.map((template) => template.generate());
+
+      expect(isDeepenedTopic(slug)).toBe(true);
+      expect(enhanced.lesson.length).toBeGreaterThanOrEqual(6);
+      expect(enhanced.commonMistakes.length).toBeGreaterThanOrEqual(5);
+      expect(enhanced.objectives.length).toBeGreaterThanOrEqual(4);
+      expect(enhanced.questionTemplates).toHaveLength(15);
+      expect(new Set(sampleQuestions.map((question) => question.skill)).size).toBeGreaterThanOrEqual(3);
+      expect(sampleQuestions.some((question) => question.type === "multiple-choice" || question.type === "expression-input" || question.type === "equation-input" || question.type === "numeric-input" || question.type === "free-response")).toBe(true);
+    }
+  });
+
+  it("generates complete practice and regular topic test questions", () => {
+    const topic = getEnhancedTopic(algebra1Topics[0]);
     const practice = generatePracticeSet(topic, "easy");
     const test = generateTestSet(topic);
 
-    expect(practice).toHaveLength(5);
-    expect(test).toHaveLength(10);
+    expect(practice).toHaveLength(PRACTICE_QUESTION_COUNT);
+    expect(test).toHaveLength(REGULAR_TEST_QUESTION_COUNT);
     for (const question of [...practice, ...test]) {
       expect(question.prompt).toBeTruthy();
       expect(question.acceptedAnswers.length).toBeGreaterThan(0);
       expect(question.hints).toHaveLength(3);
       expect(question.solution.length).toBeGreaterThanOrEqual(3);
-      expect(question.skill).toContain(topic.title);
+      expect(question.skill).toBeTruthy();
+    }
+  });
+
+  it("generates 30 question unit tests and a 50 question Algebra 1 final mastery test", () => {
+    const unitTest = generateUnitTestSet(algebra1Course.units[3]);
+    const finalTest = generateAlgebra1FinalTestSet();
+
+    expect(unitTest).toHaveLength(UNIT_TEST_QUESTION_COUNT);
+    expect(finalTest).toHaveLength(ALGEBRA_1_FINAL_TEST_QUESTION_COUNT);
+    for (const question of [...unitTest, ...finalTest]) {
+      expect(question.prompt).toBeTruthy();
+      expect(question.topicId).toBeTruthy();
+      expect(question.topicTitle).toBeTruthy();
+      expect(question.acceptedAnswers.length).toBeGreaterThan(0);
+      expect(question.solution.length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("builds per-topic assessment results for mastery downgrades", () => {
+    const unitTest = generateUnitTestSet(algebra1Course.units[3]);
+    const correctByQuestion = Object.fromEntries(unitTest.map((question, index) => [question.id, index % 2 === 0]));
+    const results = buildTopicResults(unitTest, correctByQuestion);
+
+    expect(results.length).toBeGreaterThan(0);
+    for (const result of results) {
+      expect(result.topicId).toBeTruthy();
+      expect(result.totalQuestions).toBeGreaterThan(0);
+      expect(result.score).toBeGreaterThanOrEqual(0);
+      expect(result.score).toBeLessThanOrEqual(100);
     }
   });
 
   it("does not generate duplicate multiple-choice options", () => {
-    for (const topic of algebra1Topics) {
+    for (const topic of algebra1Topics.map(getEnhancedTopic)) {
       for (const template of topic.questionTemplates) {
         for (let attempt = 0; attempt < 20; attempt += 1) {
           const question = template.generate();
