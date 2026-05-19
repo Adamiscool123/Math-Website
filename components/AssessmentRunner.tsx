@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { CSSProperties } from "react";
 import { buildTopicResults, MASTERY_TEST_THRESHOLD } from "@/content/assessmentSets";
 import type { QuestionInstance } from "@/content/types";
+import { MathText } from "@/components/MathText";
 import { reviewRecommendations, scoreQuestions } from "@/lib/scoring";
 
 type ScoreResult = ReturnType<typeof scoreQuestions>;
@@ -109,12 +110,12 @@ export function AssessmentRunner({ title, eyebrow, description, questions, backH
                     <span className="badge">Question {index + 1}</span>
                     <span className="badge badge-teal">{question.topicTitle ?? question.difficulty}</span>
                   </div>
-                  <strong>{question.prompt}</strong>
+                  <strong><MathText value={question.prompt} /></strong>
                   {question.choices ? (
                     <div className="choice-list">
                       {question.choices.map((choice, choiceIndex) => (
                         <button className={`choice ${answers[question.id] === choice ? "active" : ""}`} disabled={Boolean(result)} key={`${question.id}-${choice}-${choiceIndex}`} onClick={() => setAnswers((current) => ({ ...current, [question.id]: choice }))} type="button">
-                          {choice}
+                          <MathText value={choice} />
                         </button>
                       ))}
                     </div>
@@ -123,13 +124,13 @@ export function AssessmentRunner({ title, eyebrow, description, questions, backH
                   )}
                   {isCorrect != null ? (
                     <div className={isCorrect ? "alert alert-success" : "alert alert-error"}>
-                      {isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />} {isCorrect ? "Correct" : `Review. Accepted answer: ${question.acceptedAnswers[0]}`}
+                      {isCorrect ? <CheckCircle2 size={16} /> : <XCircle size={16} />} {isCorrect ? "Correct" : <>Review. Accepted answer: <MathText value={question.acceptedAnswers[0]} /></>}
                     </div>
                   ) : null}
                   {result ? (
                     <div className="solution">
                       <strong>Solution</strong>
-                      <ol>{question.solution.map((step) => <li key={step}>{step}</li>)}</ol>
+                      <ol>{question.solution.map((step) => <li key={step}><MathText value={step} /></li>)}</ol>
                     </div>
                   ) : null}
                 </div>
